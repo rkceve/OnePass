@@ -1,0 +1,12 @@
+.skill-staging/
+.DS_Store
+*.xcodeproj/
+build/
+DerivedData/
+.build/
+.swiftpm/
+node_modules/
+.wrangler/
+.dev.vars
+*.env
+__pycache__/
