@@ -1,0 +1,54 @@
+{
+  "note": "HTML email fixtures in the shape of real verification / newsletter / order emails (table layouts, preheaders, footers). Service names are placeholders (Acme, acme.example). expected = code as it should be typed, or null.",
+  "cases": [
+    {
+      "name": "code in subject line",
+      "file": "emails/subject-code.html",
+      "from": "Acme <security@mail.acme.example>",
+      "subject": "482913 is your Acme code",
+      "expected": "482913"
+    },
+    {
+      "name": "code alone in a table cell",
+      "file": "emails/verify-table.html",
+      "from": "Acme <no-reply@acme.example>",
+      "subject": "Verify your email address",
+      "expected": "739204"
+    },
+    {
+      "name": "code split across inline tags",
+      "file": "emails/split-tags.html",
+      "from": "Acme account team <account-security-noreply@accountprotection.acme.example>",
+      "subject": "Your single-use code",
+      "expected": "281947"
+    },
+    {
+      "name": "3+3 code split across spans with nbsp",
+      "file": "emails/split-spaced.html",
+      "from": "Acme <verify@acme.example>",
+      "subject": "Your sign-in code",
+      "expected": "593018"
+    },
+    {
+      "name": "alphanumeric login code",
+      "file": "emails/login-code-alnum.html",
+      "from": "Acme Security <security@acme.example>",
+      "subject": "Your Acme login code",
+      "expected": "K7PX2Q"
+    },
+    {
+      "name": "newsletter with numbers and security keywords",
+      "file": "emails/newsletter.html",
+      "from": "The Acme Weekly <newsletter@news.acme.example>",
+      "subject": "The Acme Weekly: 5 security tips for September",
+      "expected": null
+    },
+    {
+      "name": "order confirmation with order number",
+      "file": "emails/order-confirmation.html",
+      "from": "Acme Store <auto-confirm@store.acme.example>",
+      "subject": "Your Acme Store order #112-4567890-1234567 is confirmed",
+      "expected": null
+    }
+  ]
+}
