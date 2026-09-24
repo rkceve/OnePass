@@ -1,5 +1,6 @@
 import Foundation
 import OnePassAuth
+import OnePassAuthUI
 import OnePassModels
 import OnePassServerClient
 import OnePassStorage
@@ -14,7 +15,8 @@ import os
 //                   CredentialStore() setIMAPPassword / imapPassword / setOAuthStateData / removeAll(for:)
 //                   AppGroupState() throws  revenueCatAppUserID / usageSnapshot() / setUsageSnapshot(_:) throws
 //   OnePassAuth:    OAuthService() (client IDs from Info.plist)
-//                   signIn(kind:presenting:loginHint:) async throws -> (address: String, authStateData: Data)
+//   OnePassAuthUI:  OAuthService.signIn (app-only split, CONTRACTS §8 2026-09-24)
+//                   .signIn(kind:presenting:loginHint:) async throws -> (address: String, authStateData: Data)
 //   OnePassServerClient: ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))
 //                   currentUsage() async throws -> UsageSnapshot
 
