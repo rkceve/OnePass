@@ -21,10 +21,9 @@ extension OAuthService {
     public func signIn(kind: ProviderKind, presenting: UIViewController,
                        loginHint: String?) async throws -> (address: String, authStateData: Data) {
         let settings = try OAuthProviderSettings.settings(for: kind, clients: clients)
-        var parameters: [String: String] = [:]
-        if let hint = loginHint?.trimmingCharacters(in: .whitespacesAndNewlines), !hint.isEmpty {
-            parameters["login_hint"] = hint
-        }
+        let additionalParameters: [String: String]? = loginHint
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .flatMap { $0.isEmpty ? nil : ["login_hint": $0] }
         let flow = FlowHolder()
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -45,12 +44,12 @@ extension OAuthService {
                     scopes: settings.scopes,
                     redirectURL: settings.redirectURL,
                     responseType: OIDResponseTypeCode,
-                    additionalParameters: parameters.isEmpty ? nil : parameters
+                    additionalParameters: additionalParameters
                 )
                 // OIDAuthState+IOS.h: presents, then performs the code exchange. The returned session
                 // must stay alive until the callback (README "Authorizing – iOS").
-                flow.session = OIDAuthState.authState(byPresenting: request, presenting: presenting) { state, error in
-                    flow.session = nil
+                let session = OIDAuthState.authState(byPresenting: request, presenting: presenting) { state, error in
+                    flow.finish()
                     guard let state else {
                         continuation.resume(throwing: error ?? OAuthError.signInFailed)
                         return
@@ -62,13 +61,33 @@ extension OAuthService {
                         continuation.resume(throwing: error)
                     }
                 }
+                flow.hold(session)
             }
         }
     }
 }
 
 /// Keeps the in-flight external-user-agent session alive until its callback fires.
-private final class FlowHolder {
-    var session: OIDExternalUserAgentSession?
+///
+/// `@unchecked Sendable`: `session` and `finished` are only touched under `lock`. The holder is
+/// shared between AppAuth callbacks whose queue is not guaranteed for every path (the
+/// ASWebAuthenticationSession completion that reports a failure is not documented to run on main).
+private final class FlowHolder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var session: OIDExternalUserAgentSession?
+    private var finished = false
+
+    /// Retains `session` unless the flow already finished (then it is dropped at once).
+    func hold(_ session: OIDExternalUserAgentSession?) {
+        lock.lock(); defer { lock.unlock() }
+        if !finished { self.session = session }
+    }
+
+    /// Releases the session once the callback has fired.
+    func finish() {
+        lock.lock(); defer { lock.unlock() }
+        finished = true
+        session = nil
+    }
 }
 #endif
