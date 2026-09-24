@@ -125,9 +125,15 @@ final class ProbeAutoFillTests: XCTestCase {
         tapScrolling(settings, "AutoFill & Passwords")
         snap("settings-autofill")
         dump(settings, "settings-autofill")
+        // The row is a Switch labelled "OnePassProbe, Verification codes" wrapping an inner unlabelled Switch;
+        // tapping the row centre does not toggle it, so tap the inner switch.
         let toggle = settings.switches.matching(NSPredicate(format: "label CONTAINS[c] 'OnePassProbe'")).firstMatch
         if toggle.waitForExistence(timeout: 5) {
-            if (toggle.value as? String) != "1" { toggle.tap() }
+            record("settings-row", "label=\(toggle.label) value=\(String(describing: toggle.value))")
+            if (toggle.value as? String) != "1" {
+                let inner = toggle.switches.firstMatch
+                (inner.exists ? inner : toggle).tap()
+            }
         } else {
             let cell = settings.cells.matching(NSPredicate(format: "label CONTAINS[c] 'OnePassProbe'")).firstMatch
             if cell.exists { cell.tap() }
@@ -135,12 +141,17 @@ final class ProbeAutoFillTests: XCTestCase {
         sleep(2)
         snap("settings-toggled")
         dump(settings, "settings-toggled")
-        // Some iOS versions confirm with an alert.
-        for app in [settings, springboard] where app.alerts.firstMatch.exists {
-            let alert = app.alerts.firstMatch
-            snap("settings-alert")
-            alert.buttons.element(boundBy: alert.buttons.count - 1).tap()
+        // Some iOS versions confirm with an alert or sheet.
+        for app in [settings, springboard] {
+            for container in [app.alerts.firstMatch, app.sheets.firstMatch] where container.exists {
+                snap("settings-confirm")
+                dump(app, "settings-confirm")
+                container.buttons.element(boundBy: container.buttons.count - 1).tap()
+                sleep(2)
+            }
         }
+        record("settings-row-after", toggle.exists ? String(describing: toggle.value) : "missing")
+        snap("settings-after-confirm")
     }
 
     // MARK: - Safari
