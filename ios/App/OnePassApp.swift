@@ -1,12 +1,24 @@
-// PLACEHOLDER created by I1 (Scaffold & CI) only so the OnePass target builds.
-// Owner of ios/App/ is I6 (App wiring); replace this file entirely.
+import OnePassUI
 import SwiftUI
 
 @main
 struct OnePassApp: App {
+    @State private var model = AppModel(services: LiveServices.make())
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
-            Text("OnePass")
+            RootView(
+                accounts: model.accounts,
+                plans: model.plans,
+                usage: model.usage,
+                actions: model
+            )
+            .task { await model.start() }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task { await model.didBecomeActive() }
+            }
         }
     }
 }
