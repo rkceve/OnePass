@@ -22,7 +22,8 @@ struct IdentityRegistrar: Sendable {
     /// Saves one identity per domain for the given mailbox addresses.
     func register(mailboxAddresses: [String]) async -> Result {
         guard let label = Self.label(mailboxAddresses: mailboxAddresses) else { return .nothingToRegister }
-        let domains = Array(Set(await domainSource.domains().filter { !$0.isEmpty })).sorted()
+        let requested = await domainSource.domains()
+        let domains = Array(Set(requested.filter { !$0.isEmpty })).sorted()
         guard !domains.isEmpty else { return .nothingToRegister }
 
         let identities: [any ASCredentialIdentity] = domains.map { domain in
