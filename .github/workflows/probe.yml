@@ -1,0 +1,106 @@
+name: probe
+
+# Experiment: OTP AutoFill from a third-party credential provider in the iOS Simulator.
+# Produces a screen recording, per-step screenshots and accessibility dumps as artifacts.
+on:
+  workflow_dispatch:
+  push:
+    branches: [wip/i1]
+
+concurrency:
+  group: probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+
+      - name: Install XcodeGen and generate
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Disable hardware keyboard for this simulator
+        run: |
+          plist="$HOME/Library/Preferences/com.apple.iphonesimulator.plist"
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          /usr/libexec/PlistBuddy -c "add :DevicePreferences dict" "$plist" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "add :DevicePreferences:$SIM_UDID dict" "$plist" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "add :DevicePreferences:$SIM_UDID:ConnectHardwareKeyboard bool false" "$plist" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "set :DevicePreferences:$SIM_UDID:ConnectHardwareKeyboard false" "$plist"
+          /usr/libexec/PlistBuddy -c "print :DevicePreferences:$SIM_UDID" "$plist"
+
+      - name: Boot simulator and override status bar
+        run: |
+          xcrun simctl boot "$SIM_UDID" || true
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          # The hardware-keyboard preference is applied by Simulator.app, so run it attached to this device.
+          open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
+          sleep 10
+          xcrun simctl status_bar "$SIM_UDID" override --time 9:41 \
+            --dataNetwork wifi --wifiMode active --wifiBars 3 \
+            --cellularMode active --cellularBars 4 \
+            --batteryState charged --batteryLevel 100
+
+      - name: Check probe page is reachable
+        run: curl -fsS https://rkceve.github.io/OnePass/ | grep -q 'one-time-code'
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project OnePass.xcodeproj -scheme OnePassProbe \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -derivedDataPath build/dd \
+            | tee build-probe.log
+
+      - name: Run probe test with screen recording
+        id: test
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 --force out/probe.mov &
+          rec=$!
+          sleep 3
+          set +e
+          xcodebuild test-without-building \
+            -project OnePass.xcodeproj -scheme OnePassProbe \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -derivedDataPath build/dd \
+            -resultBundlePath out/probe.xcresult \
+            > out/test.log 2>&1
+          status=$?
+          set -e
+          kill -INT "$rec"
+          wait "$rec" || true
+          grep -E "PROBE\[|error:|Test Case|passed|failed" out/test.log | head -200 || true
+          exit $status
+
+      - name: Collect attachments and logs
+        if: always()
+        run: |
+          mkdir -p out/attachments
+          xcrun xcresulttool export attachments --path out/probe.xcresult --output-path out/attachments || true
+          ls -la out/attachments | head -100
+          xcrun simctl spawn "$SIM_UDID" log show --last 30m --style compact \
+            --predicate 'process CONTAINS "OnePassProbe" OR subsystem CONTAINS "AuthenticationServices" OR process == "AutoFillUIService" OR process == "credentialproviderd" OR process CONTAINS "AuthenticationServices"' \
+            > out/sim-log.txt 2>&1 || true
+          xcrun simctl io "$SIM_UDID" screenshot out/final.png || true
+          cp build-probe.log out/ || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: probe-output
+          path: out
+
+      - name: Fail if probe test failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1

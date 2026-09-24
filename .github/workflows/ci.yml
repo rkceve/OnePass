@@ -1,0 +1,126 @@
+name: ci
+
+on:
+  push:
+    branches: [main, "wip/**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      unsigned_diagnostic:
+        description: "Diagnostic only: build app with CODE_SIGNING_ALLOWED=NO to surface compile errors hidden behind signing failures"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: core (OnePassCore tests)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Test OnePassCore
+        working-directory: ios/OnePassCore
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -scheme OnePassCore-Package \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -skipMacroValidation -skipPackagePluginValidation \
+            -resultBundlePath "$RUNNER_TEMP/core.xcresult" \
+            | tee "$RUNNER_TEMP/core.log"
+      - name: Upload result
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-result
+          path: |
+            ${{ runner.temp }}/core.xcresult
+            ${{ runner.temp }}/core.log
+
+  ui-package:
+    name: ui-package (OnePassUI build)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Build OnePassUI
+        working-directory: ios/OnePassUI
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme OnePassUI \
+            -destination "generic/platform=iOS Simulator" \
+            | tee "$RUNNER_TEMP/ui.log"
+      - name: Upload log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-package-log
+          path: ${{ runner.temp }}/ui.log
+
+  app:
+    name: app (OnePass build)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Write Secrets.xcconfig
+        env:
+          ONEPASS_SERVER_URL: ${{ secrets.ONEPASS_SERVER_URL }}
+          ONEPASS_APP_TOKEN: ${{ secrets.ONEPASS_APP_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
+        run: bash .github/workflows/scripts/write-secrets.sh
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build OnePass
+        env:
+          EXTRA_SETTINGS: ${{ inputs.unsigned_diagnostic && 'CODE_SIGNING_ALLOWED=NO' || '' }}
+        run: |
+          set -o pipefail
+          xcodebuild build $EXTRA_SETTINGS \
+            -project OnePass.xcodeproj \
+            -scheme OnePass \
+            -destination "generic/platform=iOS Simulator" \
+            -skipMacroValidation -skipPackagePluginValidation \
+            | tee "$RUNNER_TEMP/app.log"
+      - name: Upload log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-log
+          path: ${{ runner.temp }}/app.log
+
+  server:
+    name: server (npm test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for server package
+        id: check
+        run: |
+          if [ -f server/package.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "server/package.json not present; nothing to test"; fi
+      - uses: actions/setup-node@v6
+        if: steps.check.outputs.present == 'true'
+        with:
+          node-version: 22
+      - name: npm ci && npm test
+        if: steps.check.outputs.present == 'true'
+        working-directory: server
+        run: |
+          npm ci
+          npm test
