@@ -19,13 +19,12 @@ enum ProbeIdentity {
     /// Replaces the store contents with the single probe identity.
     /// Completion receives a human-readable status line.
     static func register(completion: @escaping @Sendable (String) -> Void) {
-        let store = ASCredentialIdentityStore.shared
-        store.getState { state in
+        ASCredentialIdentityStore.shared.getState { state in
             guard state.isEnabled else {
                 completion("store disabled")
                 return
             }
-            store.replaceCredentialIdentities([makeIdentity()]) { ok, error in
+            ASCredentialIdentityStore.shared.replaceCredentialIdentities([makeIdentity()]) { ok, error in
                 if ok {
                     completion("registered")
                 } else {

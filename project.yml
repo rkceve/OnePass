@@ -101,12 +101,14 @@ targets:
       - path: ios/Probe/App
         excludes:
           - Info.plist
+          - "*.entitlements"
       - path: ios/Probe/Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.probe
         PRODUCT_NAME: OnePassProbe
         INFOPLIST_FILE: ios/Probe/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ios/Probe/App/OnePassProbe.entitlements
     dependencies:
       - target: OnePassProbeAutoFill
         embed: true
