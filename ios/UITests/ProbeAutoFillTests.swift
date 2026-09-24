@@ -54,7 +54,13 @@ final class ProbeAutoFillTests: XCTestCase {
 
         // 4. Focus the one-time-code field; the QuickType bar should appear above the keyboard.
         field.tap()
-        _ = safari.keyboards.firstMatch.waitForExistence(timeout: 10)
+        var tries = 0
+        while !safari.keyboards.firstMatch.waitForExistence(timeout: 5), tries < 2 {
+            tries += 1
+            snap("no-keyboard-retap-\(tries)")
+            field.tap()
+        }
+        record("keyboard-count", "\(safari.keyboards.count)")
         sleep(3)
         snap("keyboard-suggestion-bar")
         dump(safari, "safari-with-keyboard")
@@ -190,8 +196,11 @@ final class ProbeAutoFillTests: XCTestCase {
             for index in 0..<matches.count {
                 let element = matches.element(boundBy: index)
                 guard element.exists, element.isHittable else { continue }
-                // Ignore page content (web view) matches.
+                // Ignore page content, the status-bar "Return to OnePassProbe" breadcrumb, and anything
+                // not in the lower half of the screen (where the keyboard / QuickType bar lives).
+                if element.identifier == "breadcrumb" || element.label.hasPrefix("Return to") { continue }
                 if element.elementType == .staticText, element.label.hasPrefix("Filled") { continue }
+                if element.frame.minY < 300 { continue }
                 record("suggestion-scope", name)
                 return element
             }

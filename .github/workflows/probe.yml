@@ -29,7 +29,7 @@ jobs:
       - name: Disable hardware keyboard for this simulator
         run: |
           plist="$HOME/Library/Preferences/com.apple.iphonesimulator.plist"
-          [ -f "$plist" ] || defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
           /usr/libexec/PlistBuddy -c "add :DevicePreferences dict" "$plist" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "add :DevicePreferences:$SIM_UDID dict" "$plist" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "add :DevicePreferences:$SIM_UDID:ConnectHardwareKeyboard bool false" "$plist" 2>/dev/null \
@@ -40,6 +40,9 @@ jobs:
         run: |
           xcrun simctl boot "$SIM_UDID" || true
           xcrun simctl bootstatus "$SIM_UDID" -b
+          # The hardware-keyboard preference is applied by Simulator.app, so run it attached to this device.
+          open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
+          sleep 10
           xcrun simctl status_bar "$SIM_UDID" override --time 9:41 \
             --dataNetwork wifi --wifiMode active --wifiBars 3 \
             --cellularMode active --cellularBars 4 \

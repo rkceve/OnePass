@@ -5,6 +5,11 @@ on:
     branches: [main, "wip/**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      unsigned_diagnostic:
+        description: "Diagnostic only: build app with CODE_SIGNING_ALLOWED=NO to surface compile errors hidden behind signing failures"
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -82,9 +87,11 @@ jobs:
       - name: Generate project
         run: xcodegen generate
       - name: Build OnePass
+        env:
+          EXTRA_SETTINGS: ${{ inputs.unsigned_diagnostic && 'CODE_SIGNING_ALLOWED=NO' || '' }}
         run: |
           set -o pipefail
-          xcodebuild build \
+          xcodebuild build $EXTRA_SETTINGS \
             -project OnePass.xcodeproj \
             -scheme OnePass \
             -destination "generic/platform=iOS Simulator" \
