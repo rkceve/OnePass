@@ -17,7 +17,7 @@ Product decisions live in `SPEC_v2.md` (kept outside the repo). Facts with sourc
 |---|---|
 | `project.yml`, `ios/Config/`, `.github/workflows/`, `ios/UITests/`, `ios/Probe/` | I1 Scaffold & CI |
 | `ios/OnePassCore/Package.swift`, `ios/OnePassCore/Sources/OnePassModels/` | orchestrator (fixed; request changes) |
-| `ios/OnePassCore/Sources/OnePassStorage/`, `.../OnePassMail/`, `.../OnePassAuth/` (+ their Tests) | I2 Mail & Auth |
+| `ios/OnePassCore/Sources/OnePassStorage/`, `.../OnePassMail/`, `.../OnePassAuth/`, `.../OnePassAuthUI/` (+ their Tests) | I2 Mail & Auth |
 | `ios/OnePassCore/Sources/OnePassExtraction/` (+ Tests) | I3 Extraction |
 | `ios/OnePassCore/Sources/OnePassServerClient/` (+ Tests), `server/` | I5 Server |
 | `ios/Extension/` | I4 Extension |
@@ -111,3 +111,7 @@ Worker secrets: `JEV_API_KEY`, `REVENUECAT_SECRET_KEY`, `APP_TOKEN`. KV namespac
 ## 7. CI helper
 
 Agents with CI duties read runs/logs through the GitHub REST API using the token from `git credential fill` (host github.com). Never echo the token. Push only to your own branch `wip/<agent-id>`.
+
+## 8. Change log
+
+- 2026-09-24: `OnePassAuth` now depends on `OnePassMail` + `AppAuthCore` only (extension-safe); new `OnePassAuthUI` (app only, `AppAuth`) for interactive sign-in; new `OnePassAuthTests`. The extension links `OnePassAuth`, never `OnePassAuthUI`.

@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "OnePassStorage", targets: ["OnePassStorage"]),
         .library(name: "OnePassMail", targets: ["OnePassMail"]),
         .library(name: "OnePassAuth", targets: ["OnePassAuth"]),
+        .library(name: "OnePassAuthUI", targets: ["OnePassAuthUI"]),
         .library(name: "OnePassExtraction", targets: ["OnePassExtraction"]),
         .library(name: "OnePassServerClient", targets: ["OnePassServerClient"]),
     ],
@@ -24,8 +25,13 @@ let package = Package(
             "OnePassModels", "OnePassExtraction",
             .product(name: "SwiftMail", package: "SwiftMail"),
         ]),
+        // Extension-safe: token refresh only (AppAuthCore). Interactive sign-in lives in OnePassAuthUI (app only).
         .target(name: "OnePassAuth", dependencies: [
-            "OnePassModels", "OnePassStorage",
+            "OnePassModels", "OnePassStorage", "OnePassMail",
+            .product(name: "AppAuthCore", package: "AppAuth-iOS"),
+        ]),
+        .target(name: "OnePassAuthUI", dependencies: [
+            "OnePassAuth",
             .product(name: "AppAuth", package: "AppAuth-iOS"),
         ]),
         .target(name: "OnePassExtraction", dependencies: ["OnePassModels"], resources: [.process("Resources")]),
@@ -34,5 +40,6 @@ let package = Package(
         .testTarget(name: "OnePassMailTests", dependencies: ["OnePassMail"]),
         .testTarget(name: "OnePassExtractionTests", dependencies: ["OnePassExtraction"], resources: [.copy("Fixtures")]),
         .testTarget(name: "OnePassServerClientTests", dependencies: ["OnePassServerClient"]),
+        .testTarget(name: "OnePassAuthTests", dependencies: ["OnePassAuth"]),
     ]
 )
