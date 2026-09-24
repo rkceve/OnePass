@@ -1,0 +1,7 @@
+# Copy to .dev.vars (git-ignored) for `npm run dev`. dotenv syntax.
+APP_TOKEN=dev-app-token
+JEV_API_KEY=
+REVENUECAT_SECRET_KEY=
+# Override the wrangler.jsonc vars for local development without real keys:
+JEV_MODE=mock
+REVENUECAT_MODE=mock
