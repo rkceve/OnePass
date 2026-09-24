@@ -43,6 +43,12 @@ final class ProbeAutoFillTests: XCTestCase {
         snap("safari-opened")
         dismissSafariOnboarding()
         let field = safari.webViews.textFields.firstMatch
+        if !field.waitForExistence(timeout: 30) {
+            // Page load can stall on a fresh simulator; open the URL once more.
+            snap("safari-field-missing")
+            dump(safari, "safari-field-missing")
+            XCUIDevice.shared.system.open(URL(string: probeURL + "?retry=\(Int(Date().timeIntervalSince1970))")!)
+        }
         XCTAssertTrue(field.waitForExistence(timeout: 60), "probe page field not found")
         snap("probe-page-loaded")
 
@@ -159,10 +165,12 @@ final class ProbeAutoFillTests: XCTestCase {
     private func dismissSafariOnboarding() {
         for _ in 0..<4 {
             let button = safari.buttons.matching(NSPredicate(
-                format: "label IN {'Continue', 'Not Now', 'Close', 'Done', 'OK'}"
+                // Not "Close": the address bar's stop-loading button can match and cancel the page load.
+                format: "label IN {'Continue', 'Not Now'}"
             )).firstMatch
             guard button.waitForExistence(timeout: 3) else { return }
             snap("safari-onboarding")
+            record("safari-onboarding-button", button.label)
             button.tap()
         }
     }
