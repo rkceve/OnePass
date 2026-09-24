@@ -10,3 +10,4 @@ node_modules/
 .dev.vars
 *.env
 __pycache__/
+ios/Config/Secrets.xcconfig

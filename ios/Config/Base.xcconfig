@@ -1,0 +1,9 @@
+// Shared build settings for every target generated from project.yml.
+// Defaults come from the committed example; the git-ignored Secrets.xcconfig overrides them when present.
+
+#include "Secrets.example.xcconfig"
+#include? "Secrets.xcconfig"
+
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+SWIFT_VERSION = 6.0
+TARGETED_DEVICE_FAMILY = 1
