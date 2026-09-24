@@ -1,26 +1,12 @@
 import Foundation
+import OnePassMail
 import OnePassModels
 import OnePassStorage
 
 /// Resolves the IMAP secret for a mailbox from the Keychain, refreshing OAuth tokens as needed
-/// and writing the updated auth state back. Usable from the AutoFill extension.
-///
-/// OPEN(package): `CredentialProviding` / `MailCredential` live in OnePassMail, which OnePassAuth
-/// does not depend on in the fixed Package.swift, so this type cannot declare the conformance
-/// yet. Until the dependency is added, wire it with OnePassMail's `ClosureCredentialProvider`:
-///
-///     ClosureCredentialProvider { mailbox in
-///         switch try await provider.resolve(for: mailbox) {
-///         case .password(let p): return .password(p)
-///         case .xoauth2(let t): return .xoauth2(accessToken: t)
-///         }
-///     }
-public struct OAuthCredentialProvider: Sendable {
-    public enum Resolved: Sendable, Equatable {
-        case password(String)
-        case xoauth2(accessToken: String)
-    }
-
+/// and writing the updated auth state back. Usable from the AutoFill extension; pass it directly
+/// to `IMAPMailFetcher(credentials:timeout:)`.
+public struct OAuthCredentialProvider: CredentialProviding {
     private let store: CredentialStore
     private let service: OAuthService
 
@@ -29,7 +15,7 @@ public struct OAuthCredentialProvider: Sendable {
         self.service = service
     }
 
-    public func resolve(for mailbox: MailboxConfig) async throws -> Resolved {
+    public func credential(for mailbox: MailboxConfig) async throws -> MailCredential {
         switch mailbox.kind {
         case .imap:
             guard let password = try store.imapPassword(for: mailbox.id) else {

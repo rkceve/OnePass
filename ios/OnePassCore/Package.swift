@@ -31,7 +31,8 @@ let package = Package(
             .product(name: "AppAuthCore", package: "AppAuth-iOS"),
         ]),
         .target(name: "OnePassAuthUI", dependencies: [
-            "OnePassAuth",
+            "OnePassAuth", "OnePassModels",
+            .product(name: "AppAuthCore", package: "AppAuth-iOS"),
             .product(name: "AppAuth", package: "AppAuth-iOS"),
         ]),
         .target(name: "OnePassExtraction", dependencies: ["OnePassModels"], resources: [.process("Resources")]),
@@ -40,6 +41,6 @@ let package = Package(
         .testTarget(name: "OnePassMailTests", dependencies: ["OnePassMail"]),
         .testTarget(name: "OnePassExtractionTests", dependencies: ["OnePassExtraction"], resources: [.copy("Fixtures")]),
         .testTarget(name: "OnePassServerClientTests", dependencies: ["OnePassServerClient"]),
-        .testTarget(name: "OnePassAuthTests", dependencies: ["OnePassAuth"]),
+        .testTarget(name: "OnePassAuthTests", dependencies: ["OnePassAuth", "OnePassMail", "OnePassModels", "OnePassStorage"]),
     ]
 )

@@ -67,7 +67,7 @@ jobs:
           path: ${{ runner.temp }}/ui.log
 
   app:
-    name: app (OnePass build)
+    name: app (OnePass build + OnePassAppTests)
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -86,23 +86,57 @@ jobs:
         run: bash .github/workflows/scripts/write-secrets.sh
       - name: Generate project
         run: xcodegen generate
-      - name: Build OnePass
+      - name: Build OnePass and run OnePassAppTests
         env:
           EXTRA_SETTINGS: ${{ inputs.unsigned_diagnostic && 'CODE_SIGNING_ALLOWED=NO' || '' }}
         run: |
           set -o pipefail
-          xcodebuild build $EXTRA_SETTINGS \
+          xcodebuild test $EXTRA_SETTINGS \
             -project OnePass.xcodeproj \
             -scheme OnePass \
-            -destination "generic/platform=iOS Simulator" \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -skipMacroValidation -skipPackagePluginValidation \
+            -resultBundlePath "$RUNNER_TEMP/app.xcresult" \
             | tee "$RUNNER_TEMP/app.log"
       - name: Upload log
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: app-log
-          path: ${{ runner.temp }}/app.log
+          path: |
+            ${{ runner.temp }}/app.xcresult
+            ${{ runner.temp }}/app.log
+
+  extension:
+    name: extension (OnePassExtensionTests)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Run OnePassExtensionTests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project OnePass.xcodeproj \
+            -scheme OnePassExtensionTests \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -skipMacroValidation -skipPackagePluginValidation \
+            -resultBundlePath "$RUNNER_TEMP/extension.xcresult" \
+            | tee "$RUNNER_TEMP/extension.log"
+      - name: Upload log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: extension-log
+          path: |
+            ${{ runner.temp }}/extension.xcresult
+            ${{ runner.temp }}/extension.log
 
   server:
     name: server (npm test)
@@ -110,16 +144,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - name: Check for server package
-        id: check
-        run: |
-          if [ -f server/package.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "server/package.json not present; nothing to test"; fi
       - uses: actions/setup-node@v6
-        if: steps.check.outputs.present == 'true'
         with:
           node-version: 22
       - name: npm ci && npm test
-        if: steps.check.outputs.present == 'true'
         working-directory: server
         run: |
           npm ci

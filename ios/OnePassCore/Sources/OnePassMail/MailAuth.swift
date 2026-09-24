@@ -13,8 +13,8 @@ public protocol CredentialProviding: Sendable {
     func credential(for mailbox: MailboxConfig) async throws -> MailCredential
 }
 
-/// Adapter so callers can wire any async source (e.g. OnePassAuth's `OAuthCredentialProvider`)
-/// without OnePassMail depending on it.
+/// Adapter so callers can wire any async closure as a credential source without writing a type
+/// (OnePassAuth's `OAuthCredentialProvider` conforms to `CredentialProviding` directly).
 public struct ClosureCredentialProvider: CredentialProviding {
     private let body: @Sendable (MailboxConfig) async throws -> MailCredential
 

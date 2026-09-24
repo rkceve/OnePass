@@ -43,12 +43,12 @@ public struct OAuthClientConfiguration: Sendable, Equatable {
 }
 
 /// Per-provider OAuth settings.
-struct OAuthProviderSettings: Sendable, Equatable {
-    let clientID: String
+package struct OAuthProviderSettings: Sendable, Equatable {
+    package let clientID: String
     /// OpenID Connect issuer; discovery document at `<issuer>/.well-known/openid-configuration`.
-    let issuer: URL
-    let scopes: [String]
-    let redirectURL: URL
+    package let issuer: URL
+    package let scopes: [String]
+    package let redirectURL: URL
     /// Build the service configuration from the discovered endpoints only, without the issuer.
     ///
     /// Microsoft's `/common` discovery document publishes the placeholder issuer
@@ -56,11 +56,11 @@ struct OAuthProviderSettings: Sendable, Equatable {
     /// (`9188040d-6c67-4c5b-b112-36a304b66dad` for personal accounts). AppAuth rejects an ID token
     /// whose `iss` differs from `configuration.issuer` unless the issuer is nil
     /// (OIDAuthorizationService.m L596-L605).
-    let omitIssuer: Bool
+    package let omitIssuer: Bool
 
-    static let microsoftRedirect = URL(string: "msauth.io.github.rkceve.onepass://auth")!
+    package static let microsoftRedirect = URL(string: "msauth.io.github.rkceve.onepass://auth")!
 
-    static func settings(for kind: ProviderKind, clients: OAuthClientConfiguration) throws -> OAuthProviderSettings {
+    package static func settings(for kind: ProviderKind, clients: OAuthClientConfiguration) throws -> OAuthProviderSettings {
         switch kind {
         case .google:
             guard let clientID = clients.googleClientID else { throw OAuthError.missingClientID(.google) }
@@ -89,7 +89,7 @@ struct OAuthProviderSettings: Sendable, Equatable {
 
     /// `com.googleusercontent.apps.<GOOGLE_CLIENT_ID_PREFIX>:/oauth2redirect` (CONTRACTS §2): the
     /// client ID with its dot-separated fields reversed, used as a custom scheme.
-    static func googleRedirectURL(clientID: String) throws -> URL {
+    package static func googleRedirectURL(clientID: String) throws -> URL {
         let suffix = ".apps.googleusercontent.com"
         guard clientID.hasSuffix(suffix), clientID.count > suffix.count else {
             throw OAuthError.invalidGoogleClientID
@@ -103,7 +103,7 @@ struct OAuthProviderSettings: Sendable, Equatable {
 
     /// The signed-in mailbox address from ID token claims: `email`, then Microsoft's
     /// `preferred_username` if it looks like an address, then the address the user typed.
-    static func address(fromClaims claims: [String: Any]?, loginHint: String?) throws -> String {
+    package static func address(fromClaims claims: [String: Any]?, loginHint: String?) throws -> String {
         if let email = claims?["email"] as? String, email.contains("@") { return email }
         if let preferred = claims?["preferred_username"] as? String, preferred.contains("@") { return preferred }
         if let hint = loginHint?.trimmingCharacters(in: .whitespacesAndNewlines), hint.contains("@") { return hint }

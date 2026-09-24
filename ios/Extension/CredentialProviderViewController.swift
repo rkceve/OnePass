@@ -85,10 +85,16 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     /// Completion handler that counts the fill (CONTRACTS §6: fire-and-forget after completion).
     ///
-    /// The system runs this handler as background work after the request completes and passes
-    /// `expired == true` when it ends that time early (docs/facts/F1 §1). The fill report is
-    /// started on the first invocation and waited for at most `reportWait`, so that the extension
-    /// is not suspended before the request is sent; the result is ignored either way.
+    /// The system runs this handler after the request completes and passes `expired == true`
+    /// when it ends that time early (docs/facts/F1 §1). The handler itself never blocks: on the
+    /// first non-expired invocation it starts the fill report and returns at once.
+    ///
+    /// To keep the process from being suspended before the report is sent, the wait happens in a
+    /// `ProcessInfo.performExpiringActivity` block instead, which runs on its own concurrent
+    /// queue and holds a task assertion while it executes (Apple docs: "Performs the specified
+    /// block asynchronously and notifies you if the process is about to be suspended"). That
+    /// block waits at most `reportWait` and stops as soon as the system reports expiry.
+    /// The report result is ignored either way.
     private static func fillReporter(resolver: OneTimeCodeResolver,
                                      messageID: String) -> @Sendable (Bool) -> Void {
         let reportWait: DispatchTimeInterval = .seconds(5)
@@ -99,7 +105,14 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                 await resolver.reportFill(messageID: messageID)
                 done.signal()
             }
-            _ = done.wait(timeout: .now() + reportWait)
+            ProcessInfo.processInfo.performExpiringActivity(withReason: "Report OnePass fill") { activityExpired in
+                // An expired call (no assertion, or suspension imminent) releases a waiting call.
+                if activityExpired {
+                    done.signal()
+                    return
+                }
+                _ = done.wait(timeout: .now() + reportWait)
+            }
         }
     }
 }

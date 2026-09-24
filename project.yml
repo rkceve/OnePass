@@ -36,6 +36,8 @@ targets:
     platform: iOS
     sources:
       - path: ios/App
+        excludes:
+          - Tests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass
@@ -51,6 +53,8 @@ targets:
         product: OnePassMail
       - package: OnePassCore
         product: OnePassAuth
+      - package: OnePassCore
+        product: OnePassAuthUI
       - package: OnePassCore
         product: OnePassExtraction
       - package: OnePassCore
@@ -72,6 +76,7 @@ targets:
         excludes:
           - Info.plist
           - "*.entitlements"
+          - Tests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.autofill
@@ -92,6 +97,41 @@ targets:
       - package: OnePassCore
         product: OnePassServerClient
       - sdk: AuthenticationServices.framework
+
+  # Unit tests for AppModel (ios/App/Tests), hosted in the app.
+  OnePassAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ios/App/Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.apptests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ONEPASS_APP_TESTS"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/OnePass.app/OnePass
+        BUNDLE_LOADER: $(TEST_HOST)
+    dependencies:
+      - target: OnePass
+      - package: OnePassCore
+        product: OnePassModels
+      - package: OnePassUI
+        product: OnePassUI
+
+  # Unit tests for the extension's UI-free resolver; compiles the resolver sources directly (no host).
+  OnePassExtensionTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ios/Extension/Resolver
+      - path: ios/Extension/Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.extensiontests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - package: OnePassCore
+        product: OnePassModels
 
   # CI probe (not shipped): verifies OTP AutoFill from a third-party provider in the Simulator.
   OnePassProbe:
@@ -150,6 +190,16 @@ schemes:
       targets:
         OnePass: all
         OnePassAutoFill: all
+    test:
+      targets:
+        - OnePassAppTests
+  OnePassExtensionTests:
+    build:
+      targets:
+        OnePassExtensionTests: [test]
+    test:
+      targets:
+        - OnePassExtensionTests
   OnePassProbe:
     build:
       targets:

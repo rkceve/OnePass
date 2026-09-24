@@ -3,6 +3,7 @@ import Foundation
 import UIKit
 @preconcurrency import AppAuth
 @preconcurrency import AppAuthCore
+import OnePassAuth
 import OnePassModels
 
 // Interactive sign-in: app only. `AppAuth` (not `AppAuthCore`) contains

@@ -352,6 +352,51 @@ describe('RevenueCat', () => {
   })
 })
 
+describe('POST /v1/judge — quota check and Jev run concurrently', () => {
+  const live = {
+    JEV_MODE: 'live',
+    JEV_API_KEY: 'jev-test-key',
+    REVENUECAT_MODE: 'live',
+    REVENUECAT_SECRET_KEY: 'sk_test_secret',
+  }
+
+  it('starts the Jev calls without waiting for the RevenueCat lookup', async () => {
+    const standard = PAID_PLANS.find((p) => p.id === 'standard')!
+    // RevenueCat answers only once a Jev call has been issued. If the Jev calls waited for the
+    // entitlement lookup, the lookup would time out and degrade to the free plan.
+    let jevStarted!: () => void
+    const jevCalled = new Promise<void>((resolve) => (jevStarted = resolve))
+    const f = fakeFetch(async (url) => {
+      if (url === JEV_URL) {
+        jevStarted()
+        return json(jevResponse(0.97))
+      }
+      await jevCalled
+      return json(revenueCatWithEntitlement(standard.entitlementId!, null))
+    })
+    const c = makeClient({ bindings: live, deps: { fetch: f.fn, now: fixedNow(SEPT), upstreamTimeoutMs: 500 } })
+    const res = await c.judge({ service: SERVICE, messages: [acmeMsg] })
+    expect(res.status).toBe(200)
+    expect(await body(res)).toEqual({
+      chosenId: acmeMsg.id,
+      scores: { [acmeMsg.id]: 0.97 },
+      remaining: standard.monthlyFillLimit,
+      source: 'jev',
+    })
+  })
+
+  it('returns 402 and discards the Jev result when the quota is exhausted', async () => {
+    const f = fakeFetch((url) => (url === JEV_URL ? json(jevResponse(0.97)) : json({}, 500)))
+    const c = makeClient({ bindings: live, deps: { fetch: f.fn, now: fixedNow(SEPT) } })
+    for (let i = 0; i < FREE_PLAN.monthlyFillLimit; i++) {
+      expect((await c.fill({ messageId: `m${i}` })).status).toBe(200)
+    }
+    const res = await c.judge({ service: SERVICE, messages: [acmeMsg] })
+    expect(res.status).toBe(402)
+    expect(await body(res)).toEqual({ error: 'quota_exhausted', remaining: 0 })
+  })
+})
+
 describe('invalid bodies', () => {
   const bad = { error: 'invalid_request' }
   const cases: [string, unknown][] = [

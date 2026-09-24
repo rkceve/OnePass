@@ -111,9 +111,15 @@ export function createApp(overrides: Partial<Deps> = {}) {
   app.post('/v1/judge', async (c) => {
     const parsed = parseJudgeBody(await readJson(c))
     if (parsed === null) return invalidRequest(c)
-    const q = await quota(c, deps.now())
+    // The quota check (RevenueCat, up to the 2 s upstream timeout) and the Jev calls (2 s) run
+    // concurrently so their latencies do not add up. `judgeMessages` never rejects (failures
+    // become the fallback), so a failing quota check leaves no unhandled rejection behind.
+    // When the quota turns out to be exhausted, the Jev result is discarded.
+    const [q, result] = await Promise.all([
+      quota(c, deps.now()),
+      judgeMessages(deps, jevConfig(c), parsed.service, parsed.messages),
+    ])
     if (q.used >= q.plan.monthlyFillLimit) return quotaExhausted(c)
-    const result = await judgeMessages(deps, jevConfig(c), parsed.service, parsed.messages)
     return c.json({
       chosenId: result.chosenId,
       scores: result.scores,

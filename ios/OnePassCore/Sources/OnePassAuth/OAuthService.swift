@@ -7,7 +7,7 @@ import OnePassModels
 /// This file uses only `AppAuthCore` (token refresh + archiving), which AppAuth split out
 /// "to support iOS extensions" (CHANGELOG.md L117-L118) and which AppAuth's own extension example
 /// imports alone (Examples/Example-iOS_Swift-Carthage/Example_Extension/TodayViewController.swift L21).
-/// Interactive sign-in lives in `OAuthService+SignIn.swift` (needs the `AppAuth` UI target).
+/// Interactive sign-in lives in OnePassAuthUI (`OAuthService+SignIn.swift`; needs the `AppAuth` UI target).
 public struct OAuthService: Sendable {
     public let clients: OAuthClientConfiguration
 
@@ -39,11 +39,11 @@ public struct OAuthService: Sendable {
 
     /// `NSKeyedArchiver` data of `OIDAuthState` (CONTRACTS §4; `OIDAuthState` is NSSecureCoding,
     /// OIDAuthState.h L60). Same calls as AppAuth's SPM example (AuthManager.swift L394, L410).
-    static func archive(_ state: OIDAuthState) throws -> Data {
+    package static func archive(_ state: OIDAuthState) throws -> Data {
         try NSKeyedArchiver.archivedData(withRootObject: state, requiringSecureCoding: true)
     }
 
-    static func unarchive(_ data: Data) throws -> OIDAuthState {
+    package static func unarchive(_ data: Data) throws -> OIDAuthState {
         guard let state = try NSKeyedUnarchiver.unarchivedObject(ofClass: OIDAuthState.self, from: data) else {
             throw OAuthError.invalidAuthState
         }
@@ -51,7 +51,7 @@ public struct OAuthService: Sendable {
     }
 
     /// Address of the signed-in account, from the ID token of the latest token response.
-    static func address(of state: OIDAuthState, loginHint: String?) throws -> String {
+    package static func address(of state: OIDAuthState, loginHint: String?) throws -> String {
         let claims = state.lastTokenResponse?.idToken
             .flatMap { OIDIDToken(idTokenString: $0) }?
             .claims as? [String: Any]
