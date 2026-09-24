@@ -18,9 +18,18 @@ protocol AccountServices: AnyObject {
     /// Removes every secret stored for the mailbox (password and OAuth state).
     func deleteCredentials(mailboxID: UUID) throws
 
-    /// Opens the provider's official sign-in page with `loginHint` prefilled and
-    /// stores the resulting auth state for `mailboxID`.
-    func signIn(kind: ProviderKind, loginHint: String, mailboxID: UUID) async throws
+    /// Opens the provider's official sign-in page with `loginHint` prefilled.
+    func signIn(kind: ProviderKind, loginHint: String) async throws -> OAuthSignInResult
+    /// Stores archived OAuth state under `oauth.<mailboxID>`.
+    func saveOAuthState(_ data: Data, mailboxID: UUID) throws
+}
+
+/// Outcome of an official Google / Microsoft sign-in.
+struct OAuthSignInResult: Hashable, Sendable {
+    /// Address of the account that actually signed in (may differ from what was typed).
+    var address: String
+    /// Archived `OIDAuthState`.
+    var authStateData: Data
 }
 
 /// One purchasable package of the current RevenueCat offering, reduced to what the UI needs.

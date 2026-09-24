@@ -5,27 +5,18 @@ import OnePassServerClient
 import OnePassStorage
 import RevenueCat
 import UIKit
+import os
 
 // All concrete construction lives in this file.
 //
-// ASSUMED symbols from packages written in parallel (verify when they land):
-//   OnePassStorage (I2):
-//     MailboxStore()                                   .load() throws -> [MailboxConfig]
-//                                                      .save(_: MailboxConfig) throws   (upsert by id)
-//                                                      .delete(id: UUID) throws
-//     CredentialStore()                                .setPassword(_: String, for: UUID) throws
-//                                                      .password(for: UUID) throws -> String?
-//                                                      .setAuthState(_: <OIDAuthState>, for: UUID) throws
-//                                                      .deleteAll(for: UUID) throws
-//     AppGroupState()                                  .setAppUserID(_: String)          (key "rc.appUserID")
-//                                                      .usageSnapshot() -> UsageSnapshot? (key "usage.snapshot.v1")
-//                                                      .setUsageSnapshot(_: UsageSnapshot)
-//   OnePassAuth (I2):
-//     OAuthService()                                   .signIn(kind: ProviderKind, presenting: UIViewController,
-//                                                              loginHint: String?) async throws -> OIDAuthState
-//   OnePassServerClient (I5):
-//     ServerClient(baseURL: URL, appToken: String, appUserID: String)   conforms to UsageReporting
-//                                                      .currentUsage() async throws -> UsageSnapshot
+// Symbols used from packages written in parallel (read from origin/wip/i2 b76d60d and origin/wip/i5 7a8a6bc):
+//   OnePassStorage: MailboxStore() throws / list / add / update / remove(id:)
+//                   CredentialStore() setIMAPPassword / imapPassword / setOAuthStateData / removeAll(for:)
+//                   AppGroupState() throws  revenueCatAppUserID / usageSnapshot() / setUsageSnapshot(_:) throws
+//   OnePassAuth:    OAuthService() (client IDs from Info.plist)
+//                   signIn(kind:presenting:loginHint:) async throws -> (address: String, authStateData: Data)
+//   OnePassServerClient: ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))
+//                   currentUsage() async throws -> UsageSnapshot
 
 @MainActor
 enum LiveServices {
@@ -70,40 +61,58 @@ enum LiveServicesError: Error {
 
 @MainActor
 final class LiveAccountServices: AccountServices {
-    private let mailboxStore = MailboxStore()
+    private let mailboxStore: MailboxStore?
     private let credentialStore = CredentialStore()
     private let oauthService = OAuthService()
 
+    init() {
+        mailboxStore = try? MailboxStore()
+    }
+
+    private func store() throws -> MailboxStore {
+        guard let mailboxStore else { throw StorageError.appGroupUnavailable }
+        return mailboxStore
+    }
+
     func loadMailboxes() throws -> [MailboxConfig] {
-        try mailboxStore.load()
+        try store().list()
     }
 
     func saveMailbox(_ mailbox: MailboxConfig) throws {
-        try mailboxStore.save(mailbox)
+        let mailboxes = try store()
+        if try mailboxes.list().contains(where: { $0.id == mailbox.id }) {
+            try mailboxes.update(mailbox)
+        } else {
+            try mailboxes.add(mailbox)
+        }
     }
 
     func deleteMailbox(id: UUID) throws {
-        try mailboxStore.delete(id: id)
+        try store().remove(id: id)
     }
 
     func savePassword(_ password: String, mailboxID: UUID) throws {
-        try credentialStore.setPassword(password, for: mailboxID)
+        try credentialStore.setIMAPPassword(password, for: mailboxID)
     }
 
     func password(mailboxID: UUID) -> String? {
-        try? credentialStore.password(for: mailboxID)
+        try? credentialStore.imapPassword(for: mailboxID)
     }
 
     func deleteCredentials(mailboxID: UUID) throws {
-        try credentialStore.deleteAll(for: mailboxID)
+        try credentialStore.removeAll(for: mailboxID)
     }
 
-    func signIn(kind: ProviderKind, loginHint: String, mailboxID: UUID) async throws {
+    func signIn(kind: ProviderKind, loginHint: String) async throws -> OAuthSignInResult {
         guard let presenter = Self.topViewController() else {
             throw LiveServicesError.noPresentingViewController
         }
-        let authState = try await oauthService.signIn(kind: kind, presenting: presenter, loginHint: loginHint)
-        try credentialStore.setAuthState(authState, for: mailboxID)
+        let result = try await oauthService.signIn(kind: kind, presenting: presenter, loginHint: loginHint)
+        return OAuthSignInResult(address: result.address, authStateData: result.authStateData)
+    }
+
+    func saveOAuthState(_ data: Data, mailboxID: UUID) throws {
+        try credentialStore.setOAuthStateData(data, for: mailboxID)
     }
 
     /// The front-most view controller of the active window scene (the add-account sheet while it is open).
@@ -183,7 +192,11 @@ final class LiveUsageServices: UsageServices {
         guard let baseURL = configuration.serverURL, let appToken = configuration.appToken else {
             throw URLError(.badURL)
         }
-        let client = ServerClient(baseURL: baseURL, appToken: appToken, appUserID: appUserID)
+        let client = ServerClient(configuration: ServerClientConfiguration(
+            baseURL: baseURL,
+            appToken: appToken,
+            appUserID: { appUserID }
+        ))
         return try await client.currentUsage()
     }
 }
@@ -192,17 +205,22 @@ final class LiveUsageServices: UsageServices {
 
 @MainActor
 final class LiveSharedStateServices: SharedStateServices {
-    private let state = AppGroupState()
+    private let state = try? AppGroupState()
+    private let logger = Logger(subsystem: "io.github.rkceve.onepass", category: "AppGroupState")
 
     func setAppUserID(_ appUserID: String) {
-        state.setAppUserID(appUserID)
+        state?.revenueCatAppUserID = appUserID
     }
 
     func cachedUsage() -> UsageSnapshot? {
-        state.usageSnapshot()
+        state?.usageSnapshot()
     }
 
     func cacheUsage(_ snapshot: UsageSnapshot) {
-        state.setUsageSnapshot(snapshot)
+        do {
+            try state?.setUsageSnapshot(snapshot)
+        } catch {
+            logger.error("Caching usage failed: \(String(describing: error), privacy: .public)")
+        }
     }
 }

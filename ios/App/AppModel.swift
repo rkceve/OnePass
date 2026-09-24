@@ -93,16 +93,19 @@ final class AppModel: OnePassUIActions {
             throw OnePassUIError.needsServerSettings
         }
 
-        let id = existingMailboxID(address: address) ?? UUID()
-        try await services.accounts.signIn(kind: kind, loginHint: address, mailboxID: id)
+        let result = try await services.accounts.signIn(kind: kind, loginHint: address)
+        // The account that signed in is the one whose mailbox is read (XOAUTH2 user = this address).
+        let signedIn = result.address
+        let id = existingMailboxID(address: signedIn) ?? UUID()
+        try services.accounts.saveOAuthState(result.authStateData, mailboxID: id)
 
         let config = MailboxConfig(
             id: id,
-            address: address,
+            address: signedIn,
             kind: kind,
             imapHost: endpoint.host,
             imapPort: endpoint.port,
-            username: address
+            username: signedIn
         )
         try services.accounts.saveMailbox(config)
         reloadAccounts()

@@ -1,3 +1,6 @@
+// Compiled only by a unit-test target that defines ONEPASS_APP_TESTS; the app target
+// (sources: ios/App) compiles this file to nothing.
+#if ONEPASS_APP_TESTS
 import Foundation
 import OnePassModels
 import OnePassUI
@@ -10,9 +13,12 @@ import Testing
 private final class FakeAccounts: AccountServices {
     var mailboxes: [MailboxConfig] = []
     var passwords: [UUID: String] = [:]
-    var signIns: [(kind: ProviderKind, loginHint: String, mailboxID: UUID)] = []
+    var signIns: [(kind: ProviderKind, loginHint: String)] = []
+    var oauthStates: [UUID: Data] = [:]
     var deletedCredentials: [UUID] = []
     var signInError: Error?
+    /// Address the provider reports as signed in; nil = the login hint.
+    var signedInAddress: String?
 
     func loadMailboxes() throws -> [MailboxConfig] { mailboxes }
 
@@ -33,10 +39,13 @@ private final class FakeAccounts: AccountServices {
         passwords[mailboxID] = nil
     }
 
-    func signIn(kind: ProviderKind, loginHint: String, mailboxID: UUID) async throws {
+    func signIn(kind: ProviderKind, loginHint: String) async throws -> OAuthSignInResult {
         if let signInError { throw signInError }
-        signIns.append((kind, loginHint, mailboxID))
+        signIns.append((kind, loginHint))
+        return OAuthSignInResult(address: signedInAddress ?? loginHint, authStateData: Data("state".utf8))
     }
+
+    func saveOAuthState(_ data: Data, mailboxID: UUID) throws { oauthStates[mailboxID] = data }
 }
 
 @MainActor
@@ -218,7 +227,7 @@ struct AppModelTests {
         #expect(h.accounts.signIns.count == 1)
         #expect(h.accounts.signIns.first?.kind == .google)
         #expect(h.accounts.signIns.first?.loginHint == "hello@gmail.com")
-        #expect(h.accounts.signIns.first?.mailboxID == account.id)
+        #expect(h.accounts.oauthStates[account.id] == Data("state".utf8))
         let saved = try #require(h.accounts.mailboxes.first)
         #expect(saved.id == account.id)
         #expect(saved.kind == .google)
@@ -242,6 +251,28 @@ struct AppModelTests {
         #expect(saved.imapPort == 993)
     }
 
+    @Test func mailboxUsesTheAddressThatSignedIn() async throws {
+        let h = Harness()
+        h.accounts.signedInAddress = "Real.Name@gmail.com"
+        let model = h.makeModel()
+
+        let account = try await model.addAccount(email: "realname@gmail.com")
+
+        #expect(account.address == "Real.Name@gmail.com")
+        #expect(h.accounts.mailboxes.first?.username == "Real.Name@gmail.com")
+    }
+
+    @Test func signingInAgainReusesTheMailbox() async throws {
+        let h = Harness()
+        let model = h.makeModel()
+
+        let first = try await model.addAccount(email: "hello@gmail.com")
+        let second = try await model.addAccount(email: "HELLO@gmail.com")
+
+        #expect(second.id == first.id)
+        #expect(h.accounts.mailboxes.count == 1)
+    }
+
     @Test func failedSignInSavesNothing() async {
         let h = Harness()
         h.accounts.signInError = Boom()
@@ -251,6 +282,7 @@ struct AppModelTests {
             _ = try await model.addAccount(email: "hello@gmail.com")
         }
         #expect(h.accounts.mailboxes.isEmpty)
+        #expect(h.accounts.oauthStates.isEmpty)
     }
 
     @Test func saveIMAPStoresPasswordAndConfigAndReusesIDOnEdit() async throws {
@@ -338,3 +370,4 @@ struct AppModelTests {
         #expect(h.usage.calls.count == 2)
     }
 }
+#endif
