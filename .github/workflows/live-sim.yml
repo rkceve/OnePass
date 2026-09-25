@@ -1,0 +1,79 @@
+name: live-sim
+
+# Interactive iOS Simulator in the browser, for manual UI checks from a non-Mac machine.
+# Builds OnePass, boots an iPhone 16 simulator, streams it with serve-sim (EvanBacon/serve-sim, Apache-2.0)
+# and exposes it through a Cloudflare quick tunnel (no account). The URL is printed in the job summary.
+# Anyone with the URL can control the simulator until the job ends.
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How long to keep the simulator online (max 300)"
+        type: number
+        default: 45
+
+jobs:
+  live:
+    runs-on: macos-15
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Select Xcode and simulator
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Install tools
+        run: brew install xcodegen cloudflared
+      - name: Write Secrets.xcconfig
+        env:
+          ONEPASS_SERVER_URL: ${{ secrets.ONEPASS_SERVER_URL }}
+          ONEPASS_APP_TOKEN: ${{ secrets.ONEPASS_APP_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
+        run: bash .github/workflows/scripts/write-secrets.sh
+      - name: Build OnePass for the simulator
+        run: |
+          set -o pipefail
+          xcodegen generate
+          xcodebuild build \
+            -project OnePass.xcodeproj -scheme OnePass \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -skipMacroValidation -skipPackagePluginValidation | tail -20
+      - name: Boot, install, launch
+        run: |
+          xcrun simctl boot "$SIM_UDID" || true
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          plist=~/Library/Preferences/com.apple.iphonesimulator.plist
+          /usr/libexec/PlistBuddy -c "Add :DevicePreferences:$SIM_UDID:ConnectHardwareKeyboard bool false" "$plist" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Set :DevicePreferences:$SIM_UDID:ConnectHardwareKeyboard false" "$plist" || true
+          open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
+          sleep 5
+          xcrun simctl status_bar "$SIM_UDID" override --time 9:41 --batteryState charged --batteryLevel 100 || true
+          xcrun simctl install "$SIM_UDID" "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/OnePass.app"
+          xcrun simctl launch "$SIM_UDID" io.github.rkceve.onepass
+      - name: Stream and tunnel
+        env:
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          npx -y serve-sim "$SIM_UDID" > "$RUNNER_TEMP/serve-sim.log" 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3200 >/dev/null && break; sleep 2; done
+          cloudflared tunnel --no-autoupdate --url http://localhost:3200 > "$RUNNER_TEMP/tunnel.log" 2>&1 &
+          URL=""
+          for i in $(seq 1 60); do
+            URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$RUNNER_TEMP/tunnel.log" | head -1 || true)
+            [ -n "$URL" ] && break; sleep 2
+          done
+          echo "LIVE_URL=$URL"
+          echo "## Live simulator: $URL" >> "$GITHUB_STEP_SUMMARY"
+          M=${MINUTES:-45}; [ "$M" -gt 300 ] && M=300
+          end=$(( $(date +%s) + M*60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do sleep 30; done
+      - name: Logs
+        if: always()
+        run: |
+          tail -50 "$RUNNER_TEMP/serve-sim.log" || true
+          tail -20 "$RUNNER_TEMP/tunnel.log" || true
