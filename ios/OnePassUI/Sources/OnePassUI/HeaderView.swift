@@ -46,6 +46,8 @@ private struct SettingsButton: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .controlSize(.large)
+            // The glass style colors the glyph with the tint (the app accent); the mockup gear is dark.
+            .tint(.primary)
         } else {
             Button(action: onSettings) {
                 Image(systemName: "gearshape")

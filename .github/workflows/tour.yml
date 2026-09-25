@@ -101,7 +101,7 @@ jobs:
           # one pixel so odd native sizes (e.g. 1179 wide) fit yuv420p.
           ffmpeg -hide_banner -y -i out/tour.mov \
             -vf "fps=60,pad=ceil(iw/2)*2:ceil(ih/2)*2" \
-            -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart -an \
+            -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p -movflags +faststart -an \
             out/tour.mp4
           ffprobe -hide_banner -v error -show_entries stream=codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_frames:format=duration \
             -of default=noprint_wrappers=1 out/tour.mp4

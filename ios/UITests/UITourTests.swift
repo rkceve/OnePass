@@ -67,12 +67,11 @@ final class UITourTests: XCTestCase {
         host.tap()
         host.typeText("mail.studio.co")
 
+        // Port (default 993) and username (the typed address) are prefilled by the form.
         let port = app.textFields["accountForm.port"]
-        port.tap()
         replaceText(in: port, with: "993")
 
         let username = app.textFields["accountForm.username"]
-        username.tap()
         replaceText(in: username, with: "hello@studio.co")
 
         let password = app.secureTextFields["accountForm.password"]
@@ -146,11 +145,16 @@ final class UITourTests: XCTestCase {
         button.tap()
     }
 
-    /// Clears a focused text field and types `text`.
+    /// Leaves the field alone when it already holds `text`; otherwise focuses it with the
+    /// cursor at the end (fields are right-aligned, so a center tap lands at the start),
+    /// deletes the current value and types `text`.
     private func replaceText(in field: XCUIElement, with text: String) {
         let current = field.value as? String ?? ""
+        if current == text { return }
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
         let deletes = String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count)
         field.typeText(deletes + text)
+        XCTAssertEqual(field.value as? String, text)
     }
 
     /// The confirmation dialog's Delete button. SwiftUI may not carry the identifier into the
