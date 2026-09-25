@@ -13,6 +13,10 @@ on:
         type: number
         default: 45
 
+permissions:
+  contents: read
+  statuses: write
+
 jobs:
   live:
     runs-on: macos-15
@@ -58,6 +62,7 @@ jobs:
       - name: Stream and tunnel
         env:
           MINUTES: ${{ inputs.minutes }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           npx -y serve-sim "$SIM_UDID" > "$RUNNER_TEMP/serve-sim.log" 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3200 >/dev/null && break; sleep 2; done
@@ -69,6 +74,8 @@ jobs:
           done
           echo "LIVE_URL=$URL"
           echo "## Live simulator: $URL" >> "$GITHUB_STEP_SUMMARY"
+          # Job logs are only readable after the job ends, so publish the URL as a commit status now.
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             -d "{\"state\":\"success\",\"context\":\"live-sim\",\"target_url\":\"$URL\",\"description\":\"Live simulator URL\"}" >/dev/null
           M=${MINUTES:-45}; [ "$M" -gt 300 ] && M=300
           end=$(( $(date +%s) + M*60 ))
           while [ "$(date +%s)" -lt "$end" ]; do sleep 30; done
