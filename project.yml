@@ -200,6 +200,17 @@ schemes:
     test:
       targets:
         - OnePassExtensionTests
+  # UI tour recording (.github/workflows/tour.yml): builds the OnePass app (installed onto the
+  # simulator by the workflow) and OnePassUITests, whose UITourTests drives the OnePass app.
+  OnePassTour:
+    build:
+      targets:
+        OnePass: all
+        OnePassAutoFill: all
+        OnePassUITests: [test]
+    test:
+      targets:
+        - OnePassUITests
   OnePassProbe:
     build:
       targets:

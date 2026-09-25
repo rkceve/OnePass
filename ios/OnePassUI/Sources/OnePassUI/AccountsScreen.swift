@@ -4,14 +4,22 @@ import SwiftUI
 struct AccountsScreen: View {
     @Bindable var store: OnePassUIStore
 
+    /// Shared by the Add button (zoom source) and the add sheet (zoom destination).
+    @Namespace private var sheetNamespace
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                HeaderView(onSettings: { store.openSettings() })
+                // Gear and Add are the screen's glass controls; one container lets them
+                // share a sampling region (glass cannot sample other glass).
+                VStack(alignment: .leading, spacing: 24) {
+                    HeaderView(onSettings: { store.openSettings() })
 
-                AccountsSectionHeader {
-                    store.accountSheet = .add
+                    AccountsSectionHeader(sheetNamespace: sheetNamespace) {
+                        store.accountSheet = .add
+                    }
                 }
+                .glassGroup()
 
                 VStack(spacing: 16) {
                     ForEach(store.accounts) { account in
@@ -19,7 +27,7 @@ struct AccountsScreen: View {
                             account: account,
                             isExpanded: store.expandedAccountID == account.id,
                             onToggle: {
-                                withAnimation(.smooth) { store.toggleExpanded(account.id) }
+                                withAnimation(CardMotion.toggle) { store.toggleExpanded(account.id) }
                             },
                             onEdit: { store.accountSheet = .edit(account) },
                             onDelete: {
@@ -40,12 +48,20 @@ struct AccountsScreen: View {
         .background(PastelBackground())
         .sheet(item: $store.accountSheet) { sheet in
             AccountFormSheet(sheet: sheet, store: store)
+                // iOS 26+: the add sheet morphs out of the glass Add button.
+                .zoomTransition(
+                    sourceID: sheet == .add ? AccountsSectionHeader.addSourceID : nil,
+                    in: sheetNamespace
+                )
         }
     }
 }
 
 /// "Accounts" title with the glass "Add" button.
 private struct AccountsSectionHeader: View {
+    static let addSourceID = "accounts.add"
+
+    let sheetNamespace: Namespace.ID
     let onAdd: @MainActor () -> Void
 
     var body: some View {
@@ -54,6 +70,29 @@ private struct AccountsSectionHeader: View {
                 .font(.largeTitle.bold())
                 .accessibilityAddTraits(.isHeader)
             Spacer()
+            addButton
+                .zoomTransitionSource(id: Self.addSourceID, in: sheetNamespace)
+                .accessibilityLabel(Copy.addAccountLabel)
+                .accessibilityIdentifier("accounts.add")
+        }
+    }
+
+    /// iOS 26+: system `.glassProminent` style tinted with the accent (mockup: purple capsule).
+    /// Before iOS 26: the original tinted capsule.
+    @ViewBuilder
+    private var addButton: some View {
+        if #available(iOS 26, *) {
+            Button(action: onAdd) {
+                Label(Copy.add, systemImage: "plus")
+                    .font(.headline)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+            }
+            .buttonStyle(.glassProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .tint(Theme.accent.opacity(0.85))
+        } else {
             Button(action: onAdd) {
                 Label(Copy.add, systemImage: "plus")
                     .font(.headline)
@@ -63,9 +102,7 @@ private struct AccountsSectionHeader: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
-            .glassControl(in: Capsule(), tint: Theme.accent.opacity(0.85))
-            .accessibilityLabel(Copy.addAccountLabel)
-            .accessibilityIdentifier("accounts.add")
+            .background(Theme.accent.opacity(0.85), in: Capsule())
         }
     }
 }
