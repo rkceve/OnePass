@@ -66,13 +66,15 @@ jobs:
         run: |
           npx -y serve-sim "$SIM_UDID" > "$RUNNER_TEMP/serve-sim.log" 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3200 >/dev/null && break; sleep 2; done
-          cloudflared tunnel --no-autoupdate --url http://localhost:3200 > "$RUNNER_TEMP/tunnel.log" 2>&1 &
+          cloudflared tunnel --no-autoupdate --protocol http2 --url http://localhost:3200 > "$RUNNER_TEMP/tunnel.log" 2>&1 &
           URL=""
           for i in $(seq 1 60); do
             URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$RUNNER_TEMP/tunnel.log" | head -1 || true)
             [ -n "$URL" ] && break; sleep 2
           done
           echo "LIVE_URL=$URL"
+          echo "local preview: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3200)"
+          sleep 10; echo "via tunnel: $(curl -s -o /dev/null -w '%{http_code}' "$URL")"
           echo "## Live simulator: $URL" >> "$GITHUB_STEP_SUMMARY"
           # Job logs are only readable after the job ends, so publish the URL as a commit status now.
           curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             -d "{\"state\":\"success\",\"context\":\"live-sim\",\"target_url\":\"$URL\",\"description\":\"Live simulator URL\"}" >/dev/null
