@@ -1,0 +1,60 @@
+name: ipa
+
+# Builds a device (iphoneos) IPA for sideloading from Windows (e.g. Sideloadly with a free Apple ID).
+# The app and extension are ad-hoc signed ("-") so their entitlements are embedded in the binaries;
+# the sideloading tool re-signs them with the user's own certificate and provisioning profiles.
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: "Build configuration"
+        type: choice
+        options: [Release, Debug]
+        default: Release
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode
+        run: bash .github/workflows/scripts/select-sim.sh
+      - name: Write Secrets.xcconfig
+        env:
+          SKIPASS_SERVER_URL: ${{ secrets.SKIPASS_SERVER_URL }}
+          SKIPASS_APP_TOKEN: ${{ secrets.SKIPASS_APP_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
+        run: bash .github/workflows/scripts/write-secrets.sh
+      - name: Generate project
+        run: brew install xcodegen && xcodegen generate
+      - name: Build for device
+        env:
+          CONFIG: ${{ inputs.configuration || 'Release' }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SkiPass.xcodeproj -scheme SkiPass -configuration "$CONFIG" \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -skipMacroValidation -skipPackagePluginValidation \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM= | tail -30
+      - name: Package IPA
+        env:
+          CONFIG: ${{ inputs.configuration || 'Release' }}
+        run: |
+          app="$RUNNER_TEMP/dd/Build/Products/$CONFIG-iphoneos/SkiPass.app"
+          test -d "$app"
+          echo "Embedded entitlements (app):"; codesign -d --entitlements - "$app" 2>/dev/null || true
+          echo "Embedded entitlements (extension):"; codesign -d --entitlements - "$app/PlugIns/"*.appex 2>/dev/null || true
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry SkiPass.ipa Payload)
+          ls -la "$RUNNER_TEMP/ipa/SkiPass.ipa"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SkiPass-ipa
+          path: ${{ runner.temp }}/ipa/SkiPass.ipa
