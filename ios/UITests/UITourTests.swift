@@ -92,8 +92,7 @@ final class UITourTests: XCTestCase {
         newExpand.tap()
         let delete = app.buttons["account.\(newAddress).delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 10))
-        // Scroll so the actions sit clear of the floating tab bar.
-        app.swipeUp()
+        if !delete.isHittable { app.swipeUp() }
         pause("new-card-expanded")
 
         // Delete and confirm.
