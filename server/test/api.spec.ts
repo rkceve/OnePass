@@ -56,9 +56,9 @@ describe('auth', () => {
     expect((await c.usage()).status).toBe(401)
   })
 
-  it('rejects a missing X-OnePass-User header with 400', async () => {
+  it('rejects a missing X-SkiPass-User header with 400', async () => {
     const c = makeClient({})
-    const res = await c.raw('/v1/usage', { headers: { 'X-OnePass-App-Token': 'test-app-token' } })
+    const res = await c.raw('/v1/usage', { headers: { 'X-SkiPass-App-Token': 'test-app-token' } })
     expect(res.status).toBe(400)
     expect(await body(res)).toEqual({ error: 'invalid_request' })
   })

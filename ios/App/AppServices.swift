@@ -1,8 +1,8 @@
 import Foundation
-import OnePassModels
+import SkiPassModels
 
 // App-local seams between `AppModel` and the concrete services built in
-// `LiveServices.swift` (OnePassStorage / OnePassAuth / OnePassServerClient / RevenueCat).
+// `LiveServices.swift` (SkiPassStorage / SkiPassAuth / SkiPassServerClient / RevenueCat).
 // `AppModel` depends only on these protocols so it can be unit-tested with fakes.
 
 /// Mailboxes and their secrets (CONTRACTS §4).
@@ -59,7 +59,7 @@ protocol BillingServices: AnyObject {
     func purchase(packageID: String) async throws -> Bool
 }
 
-/// OnePass server usage endpoint (CONTRACTS §5 `GET /v1/usage`).
+/// SkiPass server usage endpoint (CONTRACTS §5 `GET /v1/usage`).
 @MainActor
 protocol UsageServices: AnyObject {
     func currentUsage(appUserID: String) async throws -> UsageSnapshot

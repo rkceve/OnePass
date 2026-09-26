@@ -6,11 +6,11 @@ import XCTest
 @MainActor
 final class ProbeAutoFillTests: XCTestCase {
     // Computed: XCUIApplication is a main-actor proxy and cheap to recreate.
-    private var probe: XCUIApplication { XCUIApplication(bundleIdentifier: "io.github.rkceve.onepass.probe") }
+    private var probe: XCUIApplication { XCUIApplication(bundleIdentifier: "io.github.rkceve.skipass.probe") }
     private var springboard: XCUIApplication { XCUIApplication(bundleIdentifier: "com.apple.springboard") }
     private var settings: XCUIApplication { XCUIApplication(bundleIdentifier: "com.apple.Preferences") }
     private var safari: XCUIApplication { XCUIApplication(bundleIdentifier: "com.apple.mobilesafari") }
-    private let probeURL = "https://rkceve.github.io/OnePass/"
+    private let probeURL = "https://rkceve.github.io/SkiPass/"
     private var step = 0
 
     func testProbeOneTimeCodeFill() throws {
@@ -137,9 +137,9 @@ final class ProbeAutoFillTests: XCTestCase {
         tapScrolling(settings, "AutoFill & Passwords")
         snap("settings-autofill")
         dump(settings, "settings-autofill")
-        // The row is a Switch labelled "OnePassProbe, Verification codes" wrapping an inner unlabelled Switch;
+        // The row is a Switch labelled "SkiPassProbe, Verification codes" wrapping an inner unlabelled Switch;
         // tapping the row centre does not toggle it, so tap the inner switch.
-        let toggle = settings.switches.matching(NSPredicate(format: "label CONTAINS[c] 'OnePassProbe'")).firstMatch
+        let toggle = settings.switches.matching(NSPredicate(format: "label CONTAINS[c] 'SkiPassProbe'")).firstMatch
         if toggle.waitForExistence(timeout: 5) {
             record("settings-row", "label=\(toggle.label) value=\(String(describing: toggle.value))")
             if (toggle.value as? String) != "1" {
@@ -147,7 +147,7 @@ final class ProbeAutoFillTests: XCTestCase {
                 (inner.exists ? inner : toggle).tap()
             }
         } else {
-            let cell = settings.cells.matching(NSPredicate(format: "label CONTAINS[c] 'OnePassProbe'")).firstMatch
+            let cell = settings.cells.matching(NSPredicate(format: "label CONTAINS[c] 'SkiPassProbe'")).firstMatch
             if cell.exists { cell.tap() }
         }
         sleep(2)
@@ -183,7 +183,7 @@ final class ProbeAutoFillTests: XCTestCase {
 
     private func findSuggestion() -> XCUIElement? {
         let predicate = NSPredicate(
-            format: "label CONTAINS[c] 'probe@example.com' OR label CONTAINS[c] 'From probe' OR label CONTAINS[c] 'OnePassProbe' OR label == '123456'"
+            format: "label CONTAINS[c] 'probe@example.com' OR label CONTAINS[c] 'From probe' OR label CONTAINS[c] 'SkiPassProbe' OR label == '123456'"
         )
         let scopes: [(String, XCUIElementQuery)] = [
             ("safari.keyboards", safari.keyboards.descendants(matching: .any)),
@@ -196,7 +196,7 @@ final class ProbeAutoFillTests: XCTestCase {
             for index in 0..<matches.count {
                 let element = matches.element(boundBy: index)
                 guard element.exists, element.isHittable else { continue }
-                // Ignore page content, the status-bar "Return to OnePassProbe" breadcrumb, and anything
+                // Ignore page content, the status-bar "Return to SkiPassProbe" breadcrumb, and anything
                 // not in the lower half of the screen (where the keyboard / QuickType bar lives).
                 if element.identifier == "breadcrumb" || element.label.hasPrefix("Return to") { continue }
                 if element.elementType == .staticText, element.label.hasPrefix("Filled") { continue }
@@ -229,7 +229,7 @@ final class ProbeAutoFillTests: XCTestCase {
                 snap("fallback-chosen")
                 return true
             }
-            let probeRow = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'OnePassProbe'")).firstMatch
+            let probeRow = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'SkiPassProbe'")).firstMatch
             if probeRow.exists {
                 probeRow.tap()
                 sleep(2)

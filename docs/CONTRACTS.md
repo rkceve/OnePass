@@ -16,12 +16,12 @@ Product decisions live in `SPEC_v2.md` (kept outside the repo). Facts with sourc
 | Path | Owner |
 |---|---|
 | `project.yml`, `ios/Config/`, `.github/workflows/`, `ios/UITests/`, `ios/Probe/` | I1 Scaffold & CI |
-| `ios/OnePassCore/Package.swift`, `ios/OnePassCore/Sources/OnePassModels/` | orchestrator (fixed; request changes) |
-| `ios/OnePassCore/Sources/OnePassStorage/`, `.../OnePassMail/`, `.../OnePassAuth/`, `.../OnePassAuthUI/` (+ their Tests) | I2 Mail & Auth |
-| `ios/OnePassCore/Sources/OnePassExtraction/` (+ Tests) | I3 Extraction |
-| `ios/OnePassCore/Sources/OnePassServerClient/` (+ Tests), `server/` | I5 Server |
+| `ios/SkiPassCore/Package.swift`, `ios/SkiPassCore/Sources/SkiPassModels/` | orchestrator (fixed; request changes) |
+| `ios/SkiPassCore/Sources/SkiPassStorage/`, `.../SkiPassMail/`, `.../SkiPassAuth/`, `.../SkiPassAuthUI/` (+ their Tests) | I2 Mail & Auth |
+| `ios/SkiPassCore/Sources/SkiPassExtraction/` (+ Tests) | I3 Extraction |
+| `ios/SkiPassCore/Sources/SkiPassServerClient/` (+ Tests), `server/` | I5 Server |
 | `ios/Extension/` | I4 Extension |
-| `ios/OnePassUI/` | I6 UI (done, round 1) |
+| `ios/SkiPassUI/` | I6 UI (done, round 1) |
 | `ios/App/` | I6 App wiring |
 | `demo-site/` | I7 Demo site (blocked: Open) |
 | `eval/` | I8 Evaluation |
@@ -31,24 +31,24 @@ Product decisions live in `SPEC_v2.md` (kept outside the repo). Facts with sourc
 
 | Item | Value |
 |---|---|
-| App bundle ID | `io.github.rkceve.onepass` |
-| Extension bundle ID | `io.github.rkceve.onepass.autofill` |
-| UI test bundle ID | `io.github.rkceve.onepass.uitests` |
-| App Group | `group.io.github.rkceve.onepass` |
-| Keychain access group | same string as the App Group (`group.io.github.rkceve.onepass`), so no team prefix is needed |
+| App bundle ID | `io.github.rkceve.skipass` |
+| Extension bundle ID | `io.github.rkceve.skipass.autofill` |
+| UI test bundle ID | `io.github.rkceve.skipass.uitests` |
+| App Group | `group.io.github.rkceve.skipass` |
+| Keychain access group | same string as the App Group (`group.io.github.rkceve.skipass`), so no team prefix is needed |
 | Deployment target | iOS 18.0 (app, extension, packages) |
 | CI | GitHub Actions `macos-15`, Xcode 26.x (newest installed), simulator **iPhone 16**, newest iOS 26.x runtime (iPhone 16 screenshots are 1179×2556) |
 | Signing | Simulator only; no team; entitlements files still declared |
 | Google redirect | `com.googleusercontent.apps.<GOOGLE_CLIENT_ID_PREFIX>:/oauth2redirect` |
-| Microsoft redirect | `msauth.io.github.rkceve.onepass://auth` |
+| Microsoft redirect | `msauth.io.github.rkceve.skipass://auth` |
 
 Build-time configuration comes from `ios/Config/Secrets.xcconfig` (git-ignored; `ios/Config/Secrets.example.xcconfig` committed) and is exposed through Info.plist keys:
-`OnePassServerURL`, `OnePassAppToken`, `GoogleClientID`, `MicrosoftClientID`, `RevenueCatAPIKey`.
-In CI these come from GitHub secrets of the same names in SCREAMING_SNAKE_CASE (`ONEPASS_SERVER_URL`, `ONEPASS_APP_TOKEN`, `GOOGLE_CLIENT_ID`, `MICROSOFT_CLIENT_ID`, `REVENUECAT_API_KEY`), plus test-only `DEMO_MAILBOX_ADDRESS`, `DEMO_GOOGLE_REFRESH_TOKEN`.
+`SkiPassServerURL`, `SkiPassAppToken`, `GoogleClientID`, `MicrosoftClientID`, `RevenueCatAPIKey`.
+In CI these come from GitHub secrets of the same names in SCREAMING_SNAKE_CASE (`SKIPASS_SERVER_URL`, `SKIPASS_APP_TOKEN`, `GOOGLE_CLIENT_ID`, `MICROSOFT_CLIENT_ID`, `REVENUECAT_API_KEY`), plus test-only `DEMO_MAILBOX_ADDRESS`, `DEMO_GOOGLE_REFRESH_TOKEN`.
 
-## 3. Shared Swift models (`OnePassModels`, fixed)
+## 3. Shared Swift models (`SkiPassModels`, fixed)
 
-See `ios/OnePassCore/Sources/OnePassModels/*.swift`. Summary:
+See `ios/SkiPassCore/Sources/SkiPassModels/*.swift`. Summary:
 - `ProviderKind` (`google`, `microsoft`, `imap`) with IMAP presets: google `imap.gmail.com:993`, microsoft `outlook.office365.com:993`.
 - `MailboxConfig` — persisted mailbox (no secrets).
 - `FetchedMessage` — one email as text: `id` = `"<mailboxID>:<uid>"`, `mailboxAddress`, `from`, `to`, `subject`, `date`, `bodyText` (plain text; HTML converted by I3's `HTMLText`).
@@ -56,19 +56,19 @@ See `ios/OnePassCore/Sources/OnePassModels/*.swift`. Summary:
 - Protocols: `MailFetching`, `CodeExtracting`, `CandidateJudging`, `UsageReporting`.
 - `JudgeOutcome` — `.chosen(messageID, scores)`, `.noMatch(scores)`, `.quotaExhausted`.
 
-## 4. Shared storage (implemented by I2 in `OnePassStorage`)
+## 4. Shared storage (implemented by I2 in `SkiPassStorage`)
 
-- App Group `UserDefaults(suiteName: "group.io.github.rkceve.onepass")`:
+- App Group `UserDefaults(suiteName: "group.io.github.rkceve.skipass")`:
   - `mailboxes.v1` → JSON `[MailboxConfig]`
   - `rc.appUserID` → String (written by app after RevenueCat configure; read by extension)
   - `usage.snapshot.v1` → JSON `UsageSnapshot` (last known usage, for the app UI)
-- Keychain generic passwords: service `io.github.rkceve.onepass`, access group = App Group, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, not synchronizable.
+- Keychain generic passwords: service `io.github.rkceve.skipass`, access group = App Group, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, not synchronizable.
   - account `password.<mailboxID>` → UTF-8 IMAP password
   - account `oauth.<mailboxID>` → `NSKeyedArchiver` data of AppAuth `OIDAuthState`
 
-## 5. Server HTTP API (Cloudflare Worker, implemented by I5; Swift client in `OnePassServerClient`)
+## 5. Server HTTP API (Cloudflare Worker, implemented by I5; Swift client in `SkiPassServerClient`)
 
-All requests: `Content-Type: application/json`, headers `X-OnePass-App-Token: <OnePassAppToken>`, `X-OnePass-User: <RevenueCat app user ID>`. Missing/invalid token → 401 `{"error":"unauthorized"}`.
+All requests: `Content-Type: application/json`, headers `X-SkiPass-App-Token: <SkiPassAppToken>`, `X-SkiPass-User: <RevenueCat app user ID>`. Missing/invalid token → 401 `{"error":"unauthorized"}`.
 
 `POST /v1/judge` — does NOT count usage.
 ```json
@@ -101,7 +101,7 @@ Worker secrets: `JEV_API_KEY`, `REVENUECAT_SECRET_KEY`, `APP_TOKEN`. KV namespac
 ## 6. Extension flow (I4)
 
 1. `provideCredentialWithoutUserInteraction(for:)` with `ASOneTimeCodeCredentialRequest` → service = identity.serviceIdentifier.identifier.
-2. Load mailboxes + credentials (OnePassStorage); fetch messages from the last 10 minutes from every mailbox in parallel (`MailFetching`), 4 s budget per mailbox.
+2. Load mailboxes + credentials (SkiPassStorage); fetch messages from the last 10 minutes from every mailbox in parallel (`MailFetching`), 4 s budget per mailbox.
 3. Keep messages where `CodeExtracting` finds a code.
 4. `CandidateJudging.judge(service:messages:)`:
    - `.chosen` → `completeOneTimeCodeRequest(using: ASOneTimeCodeCredential(code:))`, then `UsageReporting.reportFill(messageID:)` (fire-and-forget).
@@ -114,4 +114,4 @@ Agents with CI duties read runs/logs through the GitHub REST API using the token
 
 ## 8. Change log
 
-- 2026-09-24: `OnePassAuth` now depends on `OnePassMail` + `AppAuthCore` only (extension-safe); new `OnePassAuthUI` (app only, `AppAuth`) for interactive sign-in; new `OnePassAuthTests`. The extension links `OnePassAuth`, never `OnePassAuthUI`.
+- 2026-09-24: `SkiPassAuth` now depends on `SkiPassMail` + `AppAuthCore` only (extension-safe); new `SkiPassAuthUI` (app only, `AppAuth`) for interactive sign-in; new `SkiPassAuthTests`. The extension links `SkiPassAuth`, never `SkiPassAuthUI`.

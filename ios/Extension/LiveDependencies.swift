@@ -1,26 +1,26 @@
 import Foundation
-import OnePassAuth
-import OnePassExtraction
-import OnePassMail
-import OnePassModels
-import OnePassServerClient
-import OnePassStorage
+import SkiPassAuth
+import SkiPassExtraction
+import SkiPassMail
+import SkiPassModels
+import SkiPassServerClient
+import SkiPassStorage
 
-/// Wiring of the concrete OnePassCore implementations into `OneTimeCodeResolver`.
+/// Wiring of the concrete SkiPassCore implementations into `OneTimeCodeResolver`.
 ///
 /// This is the only file that names concrete types from I2 (Storage/Mail/Auth),
 /// I3 (Extraction) and I5 (ServerClient). Symbols used (same as ios/App/LiveServices.swift):
-///   - OnePassStorage: `MailboxStore() throws`, `.list()`; `AppGroupState() throws`, `.revenueCatAppUserID`
-///   - OnePassAuth:    `OAuthCredentialProvider()`: `CredentialProviding`
-///   - OnePassMail:    `IMAPMailFetcher(credentials:timeout:)`: `MailFetching`
-///   - OnePassExtraction: `OTPCodeExtractor()`: `CodeExtracting`
-///   - OnePassServerClient: `ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))`,
+///   - SkiPassStorage: `MailboxStore() throws`, `.list()`; `AppGroupState() throws`, `.revenueCatAppUserID`
+///   - SkiPassAuth:    `OAuthCredentialProvider()`: `CredentialProviding`
+///   - SkiPassMail:    `IMAPMailFetcher(credentials:timeout:)`: `MailFetching`
+///   - SkiPassExtraction: `OTPCodeExtractor()`: `CodeExtracting`
+///   - SkiPassServerClient: `ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))`,
 ///     conforming to `CandidateJudging` and `UsageReporting`
 enum LiveDependencies {
 
     /// Info.plist keys (CONTRACTS §2).
-    static let serverURLKey = "OnePassServerURL"
-    static let appTokenKey = "OnePassAppToken"
+    static let serverURLKey = "SkiPassServerURL"
+    static let appTokenKey = "SkiPassAppToken"
 
     /// Returns nil when the server configuration, the App Group or the RevenueCat app user ID is
     /// missing, in which case the extension cancels every request silently.

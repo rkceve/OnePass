@@ -1,4 +1,4 @@
-// CI probe (not shipped): shared between OnePassProbe and OnePassProbeAutoFill.
+// CI probe (not shipped): shared between SkiPassProbe and SkiPassProbeAutoFill.
 import AuthenticationServices
 
 enum ProbeIdentity {

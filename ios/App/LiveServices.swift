@@ -1,9 +1,9 @@
 import Foundation
-import OnePassAuth
-import OnePassAuthUI
-import OnePassModels
-import OnePassServerClient
-import OnePassStorage
+import SkiPassAuth
+import SkiPassAuthUI
+import SkiPassModels
+import SkiPassServerClient
+import SkiPassStorage
 import RevenueCat
 import UIKit
 import os
@@ -11,13 +11,13 @@ import os
 // All concrete construction lives in this file.
 //
 // Symbols used from packages written in parallel (read from origin/wip/i2 b76d60d and origin/wip/i5 7a8a6bc):
-//   OnePassStorage: MailboxStore() throws / list / add / update / remove(id:)
+//   SkiPassStorage: MailboxStore() throws / list / add / update / remove(id:)
 //                   CredentialStore() setIMAPPassword / imapPassword / setOAuthStateData / removeAll(for:)
 //                   AppGroupState() throws  revenueCatAppUserID / usageSnapshot() / setUsageSnapshot(_:) throws
-//   OnePassAuth:    OAuthService() (client IDs from Info.plist)
-//   OnePassAuthUI:  OAuthService.signIn (app-only split, CONTRACTS §8 2026-09-24)
+//   SkiPassAuth:    OAuthService() (client IDs from Info.plist)
+//   SkiPassAuthUI:  OAuthService.signIn (app-only split, CONTRACTS §8 2026-09-24)
 //                   .signIn(kind:presenting:loginHint:) async throws -> (address: String, authStateData: Data)
-//   OnePassServerClient: ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))
+//   SkiPassServerClient: ServerClient(configuration: ServerClientConfiguration(baseURL:appToken:appUserID:))
 //                   currentUsage() async throws -> UsageSnapshot
 
 @MainActor
@@ -40,8 +40,8 @@ struct AppConfiguration: Sendable {
     var revenueCatAPIKey: String?
 
     init(bundle: Bundle) {
-        serverURL = Self.value("OnePassServerURL", in: bundle).flatMap(URL.init(string:))
-        appToken = Self.value("OnePassAppToken", in: bundle)
+        serverURL = Self.value("SkiPassServerURL", in: bundle).flatMap(URL.init(string:))
+        appToken = Self.value("SkiPassAppToken", in: bundle)
         revenueCatAPIKey = Self.value("RevenueCatAPIKey", in: bundle)
     }
 
@@ -59,7 +59,7 @@ enum LiveServicesError: Error {
     case packageNotFound(String)
 }
 
-// MARK: - Accounts (OnePassStorage + OnePassAuth)
+// MARK: - Accounts (SkiPassStorage + SkiPassAuth)
 
 @MainActor
 final class LiveAccountServices: AccountServices {
@@ -180,7 +180,7 @@ final class LiveBillingServices: BillingServices {
     }
 }
 
-// MARK: - Usage (OnePassServerClient)
+// MARK: - Usage (SkiPassServerClient)
 
 @MainActor
 final class LiveUsageServices: UsageServices {
@@ -203,12 +203,12 @@ final class LiveUsageServices: UsageServices {
     }
 }
 
-// MARK: - App Group state (OnePassStorage)
+// MARK: - App Group state (SkiPassStorage)
 
 @MainActor
 final class LiveSharedStateServices: SharedStateServices {
     private let state = try? AppGroupState()
-    private let logger = Logger(subsystem: "io.github.rkceve.onepass", category: "AppGroupState")
+    private let logger = Logger(subsystem: "io.github.rkceve.skipass", category: "AppGroupState")
 
     func setAppUserID(_ appUserID: String) {
         state?.revenueCatAppUserID = appUserID

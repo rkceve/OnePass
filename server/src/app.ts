@@ -1,4 +1,4 @@
-// OnePass server HTTP API — docs/CONTRACTS.md §5 is the binding contract for paths, headers,
+// SkiPass server HTTP API — docs/CONTRACTS.md §5 is the binding contract for paths, headers,
 // bodies and status codes. Bindings are read from `c.env` as in
 // https://hono.dev/docs/getting-started/cloudflare-workers ("Bindings").
 //
@@ -11,8 +11,8 @@ import { type JudgeMessage, judgeMessages } from './jev'
 import { lookupPlan } from './revenuecat'
 import { formatInstant, readUsed, resetsAt, writeUsed } from './usage'
 
-export const APP_TOKEN_HEADER = 'X-OnePass-App-Token'
-export const USER_HEADER = 'X-OnePass-User'
+export const APP_TOKEN_HEADER = 'X-SkiPass-App-Token'
+export const USER_HEADER = 'X-SkiPass-User'
 
 /** Request limits (not in CONTRACTS; defensive bounds). */
 export const MAX_MESSAGES = 50

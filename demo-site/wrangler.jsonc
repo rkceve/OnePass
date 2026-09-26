@@ -1,7 +1,7 @@
 // Same layout as server/wrangler.jsonc (Hono's cloudflare-workers template).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "onepass-demo",
+  "name": "skipass-demo",
   "main": "src/index.ts",
   "compatibility_date": "2025-08-03",
   "vars": {

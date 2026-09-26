@@ -17,19 +17,19 @@ concurrency:
 
 jobs:
   core:
-    name: core (OnePassCore tests)
+    name: core (SkiPassCore tests)
     runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
       - name: Select Xcode and simulator
         run: bash .github/workflows/scripts/select-sim.sh
-      - name: Test OnePassCore
-        working-directory: ios/OnePassCore
+      - name: Test SkiPassCore
+        working-directory: ios/SkiPassCore
         run: |
           set -o pipefail
           xcodebuild test \
-            -scheme OnePassCore-Package \
+            -scheme SkiPassCore-Package \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -skipMacroValidation -skipPackagePluginValidation \
             -resultBundlePath "$RUNNER_TEMP/core.xcresult" \
@@ -44,19 +44,19 @@ jobs:
             ${{ runner.temp }}/core.log
 
   ui-package:
-    name: ui-package (OnePassUI build)
+    name: ui-package (SkiPassUI build)
     runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - name: Select Xcode and simulator
         run: bash .github/workflows/scripts/select-sim.sh
-      - name: Build OnePassUI
-        working-directory: ios/OnePassUI
+      - name: Build SkiPassUI
+        working-directory: ios/SkiPassUI
         run: |
           set -o pipefail
           xcodebuild build \
-            -scheme OnePassUI \
+            -scheme SkiPassUI \
             -destination "generic/platform=iOS Simulator" \
             | tee "$RUNNER_TEMP/ui.log"
       - name: Upload log
@@ -67,7 +67,7 @@ jobs:
           path: ${{ runner.temp }}/ui.log
 
   app:
-    name: app (OnePass build + OnePassAppTests)
+    name: app (SkiPass build + SkiPassAppTests)
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -78,22 +78,22 @@ jobs:
         run: brew install xcodegen
       - name: Write Secrets.xcconfig
         env:
-          ONEPASS_SERVER_URL: ${{ secrets.ONEPASS_SERVER_URL }}
-          ONEPASS_APP_TOKEN: ${{ secrets.ONEPASS_APP_TOKEN }}
+          SKIPASS_SERVER_URL: ${{ secrets.SKIPASS_SERVER_URL }}
+          SKIPASS_APP_TOKEN: ${{ secrets.SKIPASS_APP_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
           REVENUECAT_API_KEY: ${{ secrets.REVENUECAT_API_KEY }}
         run: bash .github/workflows/scripts/write-secrets.sh
       - name: Generate project
         run: xcodegen generate
-      - name: Build OnePass and run OnePassAppTests
+      - name: Build SkiPass and run SkiPassAppTests
         env:
           EXTRA_SETTINGS: ${{ inputs.unsigned_diagnostic && 'CODE_SIGNING_ALLOWED=NO' || '' }}
         run: |
           set -o pipefail
           xcodebuild test $EXTRA_SETTINGS \
-            -project OnePass.xcodeproj \
-            -scheme OnePass \
+            -project SkiPass.xcodeproj \
+            -scheme SkiPass \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -skipMacroValidation -skipPackagePluginValidation \
             -resultBundlePath "$RUNNER_TEMP/app.xcresult" \
@@ -108,7 +108,7 @@ jobs:
             ${{ runner.temp }}/app.log
 
   extension:
-    name: extension (OnePassExtensionTests)
+    name: extension (SkiPassExtensionTests)
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -119,12 +119,12 @@ jobs:
         run: brew install xcodegen
       - name: Generate project
         run: xcodegen generate
-      - name: Run OnePassExtensionTests
+      - name: Run SkiPassExtensionTests
         run: |
           set -o pipefail
           xcodebuild test \
-            -project OnePass.xcodeproj \
-            -scheme OnePassExtensionTests \
+            -project SkiPass.xcodeproj \
+            -scheme SkiPassExtensionTests \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -skipMacroValidation -skipPackagePluginValidation \
             -resultBundlePath "$RUNNER_TEMP/extension.xcresult" \

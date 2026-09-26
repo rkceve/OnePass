@@ -1,4 +1,4 @@
-// OnePass demo site: one one-time-code entry screen whose code is emailed to a fixed mailbox.
+// SkiPass demo site: one one-time-code entry screen whose code is emailed to a fixed mailbox.
 //   GET  /        the page
 //   POST /send    new 6-digit code for this cookie session, emailed to DEMO_TO (max 1 per 30 s)
 //   POST /verify  {"code": "123456"} -> {"result": "correct" | "incorrect" | "expired"}

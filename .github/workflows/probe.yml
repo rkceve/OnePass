@@ -49,13 +49,13 @@ jobs:
             --batteryState charged --batteryLevel 100
 
       - name: Check probe page is reachable
-        run: curl -fsS https://rkceve.github.io/OnePass/ | grep -q 'one-time-code'
+        run: curl -fsS https://rkceve.github.io/SkiPass/ | grep -q 'one-time-code'
 
       - name: Build for testing
         run: |
           set -o pipefail
           xcodebuild build-for-testing \
-            -project OnePass.xcodeproj -scheme OnePassProbe \
+            -project SkiPass.xcodeproj -scheme SkiPassProbe \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build/dd \
             | tee build-probe.log
@@ -70,7 +70,7 @@ jobs:
           sleep 3
           set +e
           xcodebuild test-without-building \
-            -project OnePass.xcodeproj -scheme OnePassProbe \
+            -project SkiPass.xcodeproj -scheme SkiPassProbe \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build/dd \
             -resultBundlePath out/probe.xcresult \
@@ -89,7 +89,7 @@ jobs:
           xcrun xcresulttool export attachments --path out/probe.xcresult --output-path out/attachments || true
           ls -la out/attachments | head -100
           xcrun simctl spawn "$SIM_UDID" log show --last 30m --style compact \
-            --predicate 'process CONTAINS "OnePassProbe" OR subsystem CONTAINS "AuthenticationServices" OR process == "AutoFillUIService" OR process == "credentialproviderd" OR process CONTAINS "AuthenticationServices"' \
+            --predicate 'process CONTAINS "SkiPassProbe" OR subsystem CONTAINS "AuthenticationServices" OR process == "AutoFillUIService" OR process == "credentialproviderd" OR process CONTAINS "AuthenticationServices"' \
             > out/sim-log.txt 2>&1 || true
           xcrun simctl io "$SIM_UDID" screenshot out/final.png || true
           cp build-probe.log out/ || true

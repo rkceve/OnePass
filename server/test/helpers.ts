@@ -51,8 +51,8 @@ export function makeClient(opts: {
   }
   const user = opts.user ?? freshUser()
   const headers = (): Record<string, string> => {
-    const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-OnePass-User': user }
-    if (opts.token !== null) h['X-OnePass-App-Token'] = opts.token ?? TOKEN
+    const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-SkiPass-User': user }
+    if (opts.token !== null) h['X-SkiPass-App-Token'] = opts.token ?? TOKEN
     return h
   }
   return {

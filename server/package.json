@@ -1,5 +1,5 @@
 {
-  "name": "onepass-server",
+  "name": "skipass-server",
   "private": true,
   "type": "module",
   "scripts": {

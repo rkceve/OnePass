@@ -118,7 +118,7 @@ export function revenueCatWithEntitlement(entitlementId: string, expiresDate: st
   }
 }
 
-/** Message text in the exact layout of `FetchedMessage.judgeText` (OnePassModels). */
+/** Message text in the exact layout of `FetchedMessage.judgeText` (SkiPassModels). */
 export function judgeText(p: { from: string; to: string; subject: string; date: string; body: string }) {
   return `From: ${p.from}\nTo: ${p.to}\nSubject: ${p.subject}\nDate: ${p.date}\n\n${p.body}`
 }

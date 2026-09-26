@@ -1,13 +1,13 @@
 import Foundation
 import Observation
-import OnePassModels
-import OnePassUI
+import SkiPassModels
+import SkiPassUI
 import os
 
-/// App state fed into `OnePassUI.RootView` and the implementation of the UI's side effects.
+/// App state fed into `SkiPassUI.RootView` and the implementation of the UI's side effects.
 @MainActor
 @Observable
-final class AppModel: OnePassUIActions {
+final class AppModel: SkiPassUIActions {
     private(set) var accounts: [MailAccount] = []
     private(set) var plans: [PlanOption] = []
     private(set) var usage: UsageInfo?
@@ -16,7 +16,7 @@ final class AppModel: OnePassUIActions {
     @ObservationIgnored private var appUserID: String?
     @ObservationIgnored private var didStart = false
     @ObservationIgnored private var isRefreshingUsage = false
-    @ObservationIgnored private let logger = Logger(subsystem: "io.github.rkceve.onepass", category: "AppModel")
+    @ObservationIgnored private let logger = Logger(subsystem: "io.github.rkceve.skipass", category: "AppModel")
 
     init(services: AppServicesBundle) {
         self.services = services
@@ -83,14 +83,14 @@ final class AppModel: OnePassUIActions {
         }
     }
 
-    // MARK: OnePassUIActions
+    // MARK: SkiPassUIActions
 
     func addAccount(email: String) async throws -> MailAccount {
         let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let kind = Self.oauthProvider(forEmail: address),
               let endpoint = kind.presetIMAPEndpoint
         else {
-            throw OnePassUIError.needsServerSettings
+            throw SkiPassUIError.needsServerSettings
         }
 
         let result = try await services.accounts.signIn(kind: kind, loginHint: address)
@@ -234,7 +234,7 @@ extension AppModel {
         }
         let free = PlanOption(
             id: freePlanID,
-            // OPEN(copy): OnePassUI.Copy has no Free-plan strings (Copy is internal and plan names are [Open]).
+            // OPEN(copy): SkiPassUI.Copy has no Free-plan strings (Copy is internal and plan names are [Open]).
             // Name mirrors the server plan id "free"; tagline and price are left empty until copy exists.
             name: "Free",
             tagline: "",

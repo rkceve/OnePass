@@ -1,4 +1,4 @@
-# OnePass server (Cloudflare Worker + Hono)
+# SkiPass server (Cloudflare Worker + Hono)
 
 Implements `docs/CONTRACTS.md` §5: `POST /v1/judge`, `POST /v1/fills`, `GET /v1/usage`.
 Scaffolded from Hono's `cloudflare-workers` template (https://github.com/honojs/starter/tree/main/templates/cloudflare-workers).
@@ -20,7 +20,7 @@ npm run typecheck
 | `USAGE` | KV binding | monthly fill counter, key `usage:<appUserID>:<YYYY-MM>` (UTC) |
 | `JEV_MODE` | var | `live` (default) or `mock`; mock is also used when `JEV_API_KEY` is empty |
 | `REVENUECAT_MODE` | var | `live` (default) or `mock` (always plan `free`); mock is also used when the key is empty |
-| `APP_TOKEN` | secret | must equal the app's `OnePassAppToken`; unset = every request is 401 |
+| `APP_TOKEN` | secret | must equal the app's `SkiPassAppToken`; unset = every request is 401 |
 | `JEV_API_KEY` | secret | TypeSafe API key |
 | `REVENUECAT_SECRET_KEY` | secret | RevenueCat **secret** API key (v1 REST) |
 
@@ -37,9 +37,9 @@ npx wrangler secret put REVENUECAT_SECRET_KEY
 npm run deploy                                # wrangler deploy --minify
 ```
 
-The deployed `https://onepass-server.<subdomain>.workers.dev` URL goes into `OnePassServerURL`
-(`ios/Config/Secrets.xcconfig`, CI secret `ONEPASS_SERVER_URL`); the same `APP_TOKEN` value goes into
-`OnePassAppToken` / `ONEPASS_APP_TOKEN`.
+The deployed `https://skipass-server.<subdomain>.workers.dev` URL goes into `SkiPassServerURL`
+(`ios/Config/Secrets.xcconfig`, CI secret `SKIPASS_SERVER_URL`); the same `APP_TOKEN` value goes into
+`SkiPassAppToken` / `SKIPASS_APP_TOKEN`.
 
 ## Known limits
 

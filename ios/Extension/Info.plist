@@ -6,7 +6,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>OnePass</string>
+	<string>SkiPass</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -36,10 +36,10 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).CredentialProviderViewController</string>
 	</dict>
-	<key>OnePassServerURL</key>
-	<string>$(ONEPASS_SERVER_URL)</string>
-	<key>OnePassAppToken</key>
-	<string>$(ONEPASS_APP_TOKEN)</string>
+	<key>SkiPassServerURL</key>
+	<string>$(SKIPASS_SERVER_URL)</string>
+	<key>SkiPassAppToken</key>
+	<string>$(SKIPASS_APP_TOKEN)</string>
 	<key>GoogleClientID</key>
 	<string>$(GOOGLE_CLIENT_ID)</string>
 	<key>MicrosoftClientID</key>

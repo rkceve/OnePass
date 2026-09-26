@@ -1,8 +1,8 @@
 import XCTest
-import OnePassModels
+import SkiPassModels
 
 // Unit tests for OneTimeCodeResolver (CONTRACTS §6). The resolver depends only on
-// OnePassModels protocols, so every collaborator here is a fake.
+// SkiPassModels protocols, so every collaborator here is a fake.
 
 final class OneTimeCodeResolverTests: XCTestCase {
 

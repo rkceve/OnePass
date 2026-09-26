@@ -9,8 +9,8 @@ out=ios/Config/Secrets.xcconfig
 # xcconfig treats "//" as a comment start; escape it as "/$()/".
 esc() { printf '%s' "$1" | sed 's#//#/$()/#g'; }
 
-[ -n "${ONEPASS_SERVER_URL:-}" ] && echo "ONEPASS_SERVER_URL = $(esc "$ONEPASS_SERVER_URL")" >> "$out"
-[ -n "${ONEPASS_APP_TOKEN:-}" ] && echo "ONEPASS_APP_TOKEN = $(esc "$ONEPASS_APP_TOKEN")" >> "$out"
+[ -n "${SKIPASS_SERVER_URL:-}" ] && echo "SKIPASS_SERVER_URL = $(esc "$SKIPASS_SERVER_URL")" >> "$out"
+[ -n "${SKIPASS_APP_TOKEN:-}" ] && echo "SKIPASS_APP_TOKEN = $(esc "$SKIPASS_APP_TOKEN")" >> "$out"
 if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then
   echo "GOOGLE_CLIENT_ID_PREFIX = ${GOOGLE_CLIENT_ID%.apps.googleusercontent.com}" >> "$out"
 fi

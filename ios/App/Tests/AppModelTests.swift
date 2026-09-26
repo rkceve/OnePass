@@ -1,11 +1,11 @@
-// Compiled only by a unit-test target that defines ONEPASS_APP_TESTS; the app target
+// Compiled only by a unit-test target that defines SKIPASS_APP_TESTS; the app target
 // (sources: ios/App) compiles this file to nothing.
-#if ONEPASS_APP_TESTS
+#if SKIPASS_APP_TESTS
 import Foundation
-import OnePassModels
-import OnePassUI
+import SkiPassModels
+import SkiPassUI
 import Testing
-@testable import OnePass
+@testable import SkiPass
 
 // Unit tests for AppModel with in-memory fakes of the App-local service seams.
 
@@ -106,10 +106,10 @@ private struct Harness {
 }
 
 private let standard = StorePackageInfo(
-    id: "$rc_monthly", productID: "onepass_standard_monthly", title: "Standard",
+    id: "$rc_monthly", productID: "skipass_standard_monthly", title: "Standard",
     description: "More fills", priceString: "$2.99", price: 2.99)
 private let pro = StorePackageInfo(
-    id: "pro_monthly", productID: "onepass_pro_monthly", title: "Pro",
+    id: "pro_monthly", productID: "skipass_pro_monthly", title: "Pro",
     description: "Most fills", priceString: "$9.99", price: 9.99)
 
 @MainActor
@@ -159,7 +159,7 @@ struct MappingTests {
     }
 
     @Test func activeEntitlementMarksItsPackageCurrent() {
-        let plans = AppModel.planOptions(packages: [standard, pro], activeProductIDs: ["onepass_pro_monthly"])
+        let plans = AppModel.planOptions(packages: [standard, pro], activeProductIDs: ["skipass_pro_monthly"])
         #expect(plans.filter(\.isCurrent).map(\.id) == ["pro_monthly"])
     }
 }
@@ -211,7 +211,7 @@ struct AppModelTests {
         let h = Harness()
         let model = h.makeModel()
 
-        await #expect(throws: OnePassUIError.needsServerSettings) {
+        await #expect(throws: SkiPassUIError.needsServerSettings) {
             _ = try await model.addAccount(email: "info@myshop.jp")
         }
         #expect(h.accounts.signIns.isEmpty)
@@ -323,7 +323,7 @@ struct AppModelTests {
     @Test func selectPlanPurchasesThenRefreshesPlansAndUsage() async {
         let h = Harness()
         h.billing.packages = [standard, pro]
-        h.billing.activeAfterPurchase = ["onepass_pro_monthly"]
+        h.billing.activeAfterPurchase = ["skipass_pro_monthly"]
         let model = h.makeModel()
         await model.start()
         #expect(h.usage.calls.count == 1)

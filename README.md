@@ -1,3 +1,3 @@
-# OnePass
+# SkiPass
 
 Work in progress.

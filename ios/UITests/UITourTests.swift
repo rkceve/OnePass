@@ -1,10 +1,10 @@
 // UI tour for the screen recording in .github/workflows/tour.yml (not a functional test suite).
-// Walks every built screen of the OnePass app at a watchable pace using the in-memory
-// fixtures behind the DEBUG-only `-OnePassTourFixtures` launch argument (ios/App/TourFixtures.swift).
+// Walks every built screen of the SkiPass app at a watchable pace using the in-memory
+// fixtures behind the DEBUG-only `-SkiPassTourFixtures` launch argument (ios/App/TourFixtures.swift).
 //
-// Runs only when the test runner has ONEPASS_TOUR=1 (xcodebuild strips the TEST_RUNNER_ prefix,
-// so the workflow sets TEST_RUNNER_ONEPASS_TOUR=1). The OnePass app must already be installed
-// on the simulator: this bundle's target application is OnePassProbe.
+// Runs only when the test runner has SKIPASS_TOUR=1 (xcodebuild strips the TEST_RUNNER_ prefix,
+// so the workflow sets TEST_RUNNER_SKIPASS_TOUR=1). The SkiPass app must already be installed
+// on the simulator: this bundle's target application is SkiPassProbe.
 import XCTest
 
 @MainActor
@@ -17,13 +17,13 @@ final class UITourTests: XCTestCase {
 
     func testTour() throws {
         try XCTSkipUnless(
-            ProcessInfo.processInfo.environment["ONEPASS_TOUR"] == "1",
-            "UI tour runs only from the tour workflow (TEST_RUNNER_ONEPASS_TOUR=1)"
+            ProcessInfo.processInfo.environment["SKIPASS_TOUR"] == "1",
+            "UI tour runs only from the tour workflow (TEST_RUNNER_SKIPASS_TOUR=1)"
         )
         continueAfterFailure = false
 
-        let app = XCUIApplication(bundleIdentifier: "io.github.rkceve.onepass")
-        app.launchArguments = ["-OnePassTourFixtures"]
+        let app = XCUIApplication(bundleIdentifier: "io.github.rkceve.skipass")
+        app.launchArguments = ["-SkiPassTourFixtures"]
         app.launch()
 
         // Home list.

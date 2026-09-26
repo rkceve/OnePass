@@ -2,7 +2,7 @@
 // https://github.com/honojs/starter/tree/main/templates/cloudflare-workers (wrangler.jsonc)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "onepass-server",
+  "name": "skipass-server",
   "main": "src/index.ts",
   "compatibility_date": "2025-08-03",
   "vars": {

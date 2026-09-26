@@ -1,5 +1,5 @@
-# XcodeGen spec (owner: I1 Scaffold & CI). Generate with `xcodegen generate`; OnePass.xcodeproj is git-ignored.
-name: OnePass
+# XcodeGen spec (owner: I1 Scaffold & CI). Generate with `xcodegen generate`; SkiPass.xcodeproj is git-ignored.
+name: SkiPass
 
 options:
   bundleIdPrefix: io.github.rkceve
@@ -21,17 +21,17 @@ settings:
     DEVELOPMENT_TEAM: ""
 
 packages:
-  OnePassCore:
-    path: ios/OnePassCore
-  OnePassUI:
-    path: ios/OnePassUI
+  SkiPassCore:
+    path: ios/SkiPassCore
+  SkiPassUI:
+    path: ios/SkiPassUI
   RevenueCat:
     # https://github.com/RevenueCat/purchases-ios/releases/tag/5.91.0 (latest release on 2026-09-23)
     url: https://github.com/RevenueCat/purchases-ios
     exactVersion: 5.91.0
 
 targets:
-  OnePass:
+  SkiPass:
     type: application
     platform: iOS
     sources:
@@ -40,35 +40,35 @@ targets:
           - Tests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass
-        PRODUCT_NAME: OnePass
-        INFOPLIST_FILE: ios/Config/OnePass-Info.plist
-        CODE_SIGN_ENTITLEMENTS: ios/Config/OnePass.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass
+        PRODUCT_NAME: SkiPass
+        INFOPLIST_FILE: ios/Config/SkiPass-Info.plist
+        CODE_SIGN_ENTITLEMENTS: ios/Config/SkiPass.entitlements
     dependencies:
-      - package: OnePassCore
-        product: OnePassModels
-      - package: OnePassCore
-        product: OnePassStorage
-      - package: OnePassCore
-        product: OnePassMail
-      - package: OnePassCore
-        product: OnePassAuth
-      - package: OnePassCore
-        product: OnePassAuthUI
-      - package: OnePassCore
-        product: OnePassExtraction
-      - package: OnePassCore
-        product: OnePassServerClient
-      - package: OnePassUI
-        product: OnePassUI
+      - package: SkiPassCore
+        product: SkiPassModels
+      - package: SkiPassCore
+        product: SkiPassStorage
+      - package: SkiPassCore
+        product: SkiPassMail
+      - package: SkiPassCore
+        product: SkiPassAuth
+      - package: SkiPassCore
+        product: SkiPassAuthUI
+      - package: SkiPassCore
+        product: SkiPassExtraction
+      - package: SkiPassCore
+        product: SkiPassServerClient
+      - package: SkiPassUI
+        product: SkiPassUI
       - package: RevenueCat
         product: RevenueCat
       - package: RevenueCat
         product: RevenueCatUI
-      - target: OnePassAutoFill
+      - target: SkiPassAutoFill
         embed: true
 
-  OnePassAutoFill:
+  SkiPassAutoFill:
     type: app-extension
     platform: iOS
     sources:
@@ -79,47 +79,47 @@ targets:
           - Tests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.autofill
-        PRODUCT_NAME: OnePassAutoFill
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.autofill
+        PRODUCT_NAME: SkiPassAutoFill
         INFOPLIST_FILE: ios/Extension/Info.plist
-        CODE_SIGN_ENTITLEMENTS: ios/Extension/OnePassAutoFill.entitlements
+        CODE_SIGN_ENTITLEMENTS: ios/Extension/SkiPassAutoFill.entitlements
     dependencies:
-      - package: OnePassCore
-        product: OnePassModels
-      - package: OnePassCore
-        product: OnePassStorage
-      - package: OnePassCore
-        product: OnePassMail
-      - package: OnePassCore
-        product: OnePassAuth
-      - package: OnePassCore
-        product: OnePassExtraction
-      - package: OnePassCore
-        product: OnePassServerClient
+      - package: SkiPassCore
+        product: SkiPassModels
+      - package: SkiPassCore
+        product: SkiPassStorage
+      - package: SkiPassCore
+        product: SkiPassMail
+      - package: SkiPassCore
+        product: SkiPassAuth
+      - package: SkiPassCore
+        product: SkiPassExtraction
+      - package: SkiPassCore
+        product: SkiPassServerClient
       - sdk: AuthenticationServices.framework
 
   # Unit tests for AppModel (ios/App/Tests), hosted in the app.
-  OnePassAppTests:
+  SkiPassAppTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: ios/App/Tests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.apptests
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.apptests
         GENERATE_INFOPLIST_FILE: YES
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ONEPASS_APP_TESTS"
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/OnePass.app/OnePass
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) SKIPASS_APP_TESTS"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/SkiPass.app/SkiPass
         BUNDLE_LOADER: $(TEST_HOST)
     dependencies:
-      - target: OnePass
-      - package: OnePassCore
-        product: OnePassModels
-      - package: OnePassUI
-        product: OnePassUI
+      - target: SkiPass
+      - package: SkiPassCore
+        product: SkiPassModels
+      - package: SkiPassUI
+        product: SkiPassUI
 
   # Unit tests for the extension's UI-free resolver; compiles the resolver sources directly (no host).
-  OnePassExtensionTests:
+  SkiPassExtensionTests:
     type: bundle.unit-test
     platform: iOS
     sources:
@@ -127,14 +127,14 @@ targets:
       - path: ios/Extension/Tests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.extensiontests
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.extensiontests
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - package: OnePassCore
-        product: OnePassModels
+      - package: SkiPassCore
+        product: SkiPassModels
 
   # CI probe (not shipped): verifies OTP AutoFill from a third-party provider in the Simulator.
-  OnePassProbe:
+  SkiPassProbe:
     type: application
     platform: iOS
     sources:
@@ -145,15 +145,15 @@ targets:
       - path: ios/Probe/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.probe
-        PRODUCT_NAME: OnePassProbe
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.probe
+        PRODUCT_NAME: SkiPassProbe
         INFOPLIST_FILE: ios/Probe/App/Info.plist
-        CODE_SIGN_ENTITLEMENTS: ios/Probe/App/OnePassProbe.entitlements
+        CODE_SIGN_ENTITLEMENTS: ios/Probe/App/SkiPassProbe.entitlements
     dependencies:
-      - target: OnePassProbeAutoFill
+      - target: SkiPassProbeAutoFill
         embed: true
 
-  OnePassProbeAutoFill:
+  SkiPassProbeAutoFill:
     type: app-extension
     platform: iOS
     sources:
@@ -164,58 +164,58 @@ targets:
       - path: ios/Probe/Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.probe.autofill
-        PRODUCT_NAME: OnePassProbeAutoFill
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.probe.autofill
+        PRODUCT_NAME: SkiPassProbeAutoFill
         INFOPLIST_FILE: ios/Probe/AutoFill/Info.plist
-        CODE_SIGN_ENTITLEMENTS: ios/Probe/AutoFill/OnePassProbeAutoFill.entitlements
+        CODE_SIGN_ENTITLEMENTS: ios/Probe/AutoFill/SkiPassProbeAutoFill.entitlements
     dependencies:
       - sdk: AuthenticationServices.framework
 
-  OnePassUITests:
+  SkiPassUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
       - path: ios/UITests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.onepass.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rkceve.skipass.uitests
         GENERATE_INFOPLIST_FILE: YES
-        TEST_TARGET_NAME: OnePassProbe
+        TEST_TARGET_NAME: SkiPassProbe
     dependencies:
-      - target: OnePassProbe
+      - target: SkiPassProbe
 
 schemes:
-  OnePass:
+  SkiPass:
     build:
       targets:
-        OnePass: all
-        OnePassAutoFill: all
+        SkiPass: all
+        SkiPassAutoFill: all
     test:
       targets:
-        - OnePassAppTests
-  OnePassExtensionTests:
+        - SkiPassAppTests
+  SkiPassExtensionTests:
     build:
       targets:
-        OnePassExtensionTests: [test]
+        SkiPassExtensionTests: [test]
     test:
       targets:
-        - OnePassExtensionTests
-  # UI tour recording (.github/workflows/tour.yml): builds the OnePass app (installed onto the
-  # simulator by the workflow) and OnePassUITests, whose UITourTests drives the OnePass app.
-  OnePassTour:
+        - SkiPassExtensionTests
+  # UI tour recording (.github/workflows/tour.yml): builds the SkiPass app (installed onto the
+  # simulator by the workflow) and SkiPassUITests, whose UITourTests drives the SkiPass app.
+  SkiPassTour:
     build:
       targets:
-        OnePass: all
-        OnePassAutoFill: all
-        OnePassUITests: [test]
+        SkiPass: all
+        SkiPassAutoFill: all
+        SkiPassUITests: [test]
     test:
       targets:
-        - OnePassUITests
-  OnePassProbe:
+        - SkiPassUITests
+  SkiPassProbe:
     build:
       targets:
-        OnePassProbe: all
-        OnePassProbeAutoFill: all
+        SkiPassProbe: all
+        SkiPassProbeAutoFill: all
     test:
       targets:
-        - OnePassUITests
+        - SkiPassUITests

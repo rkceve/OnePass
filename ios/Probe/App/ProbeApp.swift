@@ -19,7 +19,7 @@ struct ProbeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("OnePass probe").font(.title2.bold())
+            Text("SkiPass probe").font(.title2.bold())
             Text("store: \(storeState)").accessibilityIdentifier("probe.storeState")
             Text("enable: \(enableResult)").accessibilityIdentifier("probe.enableResult")
             Text("register: \(registerResult)").accessibilityIdentifier("probe.registerResult")

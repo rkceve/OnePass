@@ -1,5 +1,5 @@
 import Foundation
-import OnePassModels
+import SkiPassModels
 
 /// The code to hand to the system, plus the message it came from (for fill reporting).
 public struct ResolvedCode: Sendable, Hashable {
@@ -14,7 +14,7 @@ public struct ResolvedCode: Sendable, Hashable {
 
 /// UI-free orchestration of the extension flow (CONTRACTS §6, steps 2–4).
 ///
-/// Depends only on the `OnePassModels` protocols so it can be unit-tested with fakes.
+/// Depends only on the `SkiPassModels` protocols so it can be unit-tested with fakes.
 /// Every failure resolves to `nil`; the caller cancels silently (decided: no UI).
 public struct OneTimeCodeResolver: Sendable {
     public typealias MailboxSource = @Sendable () async throws -> [MailboxConfig]

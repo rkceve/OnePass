@@ -81,14 +81,14 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild build-for-testing \
-            -project OnePass.xcodeproj -scheme OnePassTour \
+            -project SkiPass.xcodeproj -scheme SkiPassTour \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build/dd \
             -skipMacroValidation -skipPackagePluginValidation \
             | tee build-tour.log
 
-      - name: Install OnePass app
-        run: xcrun simctl install "$SIM_UDID" build/dd/Build/Products/Debug-iphonesimulator/OnePass.app
+      - name: Install SkiPass app
+        run: xcrun simctl install "$SIM_UDID" build/dd/Build/Products/Debug-iphonesimulator/SkiPass.app
 
       - name: Run tour with screen recording
         id: test
@@ -99,11 +99,11 @@ jobs:
           rec=$!
           sleep 3
           set +e
-          TEST_RUNNER_ONEPASS_TOUR=1 xcodebuild test-without-building \
-            -project OnePass.xcodeproj -scheme OnePassTour \
+          TEST_RUNNER_SKIPASS_TOUR=1 xcodebuild test-without-building \
+            -project SkiPass.xcodeproj -scheme SkiPassTour \
             -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -derivedDataPath build/dd \
-            -only-testing:OnePassUITests/UITourTests \
+            -only-testing:SkiPassUITests/UITourTests \
             -resultBundlePath out/tour.xcresult \
             > out/test.log 2>&1
           status=$?
@@ -177,16 +177,16 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild build \
-            -project OnePass.xcodeproj -scheme OnePass -configuration Release \
+            -project SkiPass.xcodeproj -scheme SkiPass -configuration Release \
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath build/dd \
             -skipMacroValidation -skipPackagePluginValidation \
             | tail -30
       - name: Check fixtures are compiled out
         run: |
-          bin=build/dd/Build/Products/Release-iphonesimulator/OnePass.app/OnePass
+          bin=build/dd/Build/Products/Release-iphonesimulator/SkiPass.app/SkiPass
           ls -la "$bin"
-          if strings -a "$bin" | grep -E "OnePassTourFixtures|TourFixtureModel|tour-fixture"; then
+          if strings -a "$bin" | grep -E "SkiPassTourFixtures|TourFixtureModel|tour-fixture"; then
             echo "tour fixtures found in Release binary"; exit 1
           fi
           echo "Release binary contains no tour fixture symbols or strings"

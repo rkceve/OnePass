@@ -1,7 +1,7 @@
 import AuthenticationServices
 import Foundation
 
-/// OnePass AutoFill credential provider (CONTRACTS §6).
+/// SkiPass AutoFill credential provider (CONTRACTS §6).
 ///
 /// All paths are silent: a code is supplied when one is found, otherwise the request is
 /// cancelled without showing anything (decided: no UI on quota exhaustion / no match / errors).
@@ -105,7 +105,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
                 await resolver.reportFill(messageID: messageID)
                 done.signal()
             }
-            ProcessInfo.processInfo.performExpiringActivity(withReason: "Report OnePass fill") { activityExpired in
+            ProcessInfo.processInfo.performExpiringActivity(withReason: "Report SkiPass fill") { activityExpired in
                 // An expired call (no assertion, or suspension imminent) releases a waiting call.
                 if activityExpired {
                     done.signal()

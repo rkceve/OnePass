@@ -7,7 +7,7 @@ protocol IdentityDomainSource: Sendable {
     func domains() async -> [String]
 }
 
-/// Registers `ASOneTimeCodeCredentialIdentity` entries so that iOS offers OnePass in
+/// Registers `ASOneTimeCodeCredentialIdentity` entries so that iOS offers SkiPass in
 /// one-time-code fields of matching sites (spec §6a: background, no UI).
 struct IdentityRegistrar: Sendable {
     let domainSource: any IdentityDomainSource

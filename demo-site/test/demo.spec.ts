@@ -4,8 +4,8 @@ import { CODE_TTL_S, SEND_INTERVAL_S, SESSION_COOKIE, codeKey, createApp, genera
 import type { Bindings, Deps } from '../src/env'
 import { RESEND_URL } from '../src/mailer'
 
-const DEMO_TO = 'onepass.demo@example.com'
-const ORIGIN = 'https://onepass-demo.example.workers.dev'
+const DEMO_TO = 'skipass.demo@example.com'
+const ORIGIN = 'https://skipass-demo.example.workers.dev'
 
 /** Resend "Send Email" example response, verbatim: https://resend.com/docs/api-reference/emails/send-email */
 const RESEND_OK = { id: '49a3999c-0ce1-4ea6-ab68-afcd6dc2e794' }

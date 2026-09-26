@@ -1,26 +1,26 @@
 // Test fixture for the UI tour recording (ios/UITests/UITourTests.swift); not a feature.
-// Compiled only into Debug builds. Launching with `-OnePassTourFixtures` replaces the live
+// Compiled only into Debug builds. Launching with `-SkiPassTourFixtures` replaces the live
 // services (storage, OAuth, RevenueCat, server) with in-memory data matching the mockups
 // (design/screen1-accounts.png, design/screen2-plan.png): no accounts, keychain or network.
 #if DEBUG
 import Foundation
 import Observation
-import OnePassModels
-import OnePassUI
+import SkiPassModels
+import SkiPassUI
 
 enum TourFixtures {
-    static let launchArgument = "-OnePassTourFixtures"
+    static let launchArgument = "-SkiPassTourFixtures"
 
     static var isEnabled: Bool {
         ProcessInfo.processInfo.arguments.contains(launchArgument)
     }
 }
 
-/// In-memory stand-in for `AppModel` during the tour. Values mirror `OnePassUI`'s
+/// In-memory stand-in for `AppModel` during the tour. Values mirror `SkiPassUI`'s
 /// internal `PreviewData` (which the app target cannot import).
 @MainActor
 @Observable
-final class TourFixtureModel: OnePassUIActions {
+final class TourFixtureModel: SkiPassUIActions {
     private(set) var accounts: [MailAccount]
     private(set) var plans: [PlanOption]
     private(set) var usage: UsageInfo?
@@ -88,7 +88,7 @@ final class TourFixtureModel: OnePassUIActions {
         usage = UsageInfo(used: 535, limit: 1_000, resetsAt: resetsAt)
     }
 
-    // MARK: OnePassUIActions (in memory)
+    // MARK: SkiPassUIActions (in memory)
 
     func addAccount(email: String) async throws -> MailAccount {
         let address = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -99,7 +99,7 @@ final class TourFixtureModel: OnePassUIActions {
         case .microsoft:
             return insert(MailAccount(address: address, kind: .microsoft, status: .connected))
         default:
-            throw OnePassUIError.needsServerSettings
+            throw SkiPassUIError.needsServerSettings
         }
     }
 

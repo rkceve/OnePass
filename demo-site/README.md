@@ -1,7 +1,7 @@
-# OnePass demo site (Cloudflare Worker + Hono)
+# SkiPass demo site (Cloudflare Worker + Hono)
 
 The only web page used in the demo video: a fictional service's one-time-code entry screen.
-Opening the page emails a fresh 6-digit code to one fixed, real mailbox (`DEMO_TO`); OnePass reads
+Opening the page emails a fresh 6-digit code to one fixed, real mailbox (`DEMO_TO`); SkiPass reads
 that mailbox and fills the code into `<input autocomplete="one-time-code">`.
 
 | Route | Behaviour |
@@ -60,7 +60,7 @@ npm run deploy -- --var DEMO_TO:<demo gmail address> --var SERVICE_NAME:Acme
 
 `--var` values are applied on every deploy, so pass `DEMO_TO` each time (a plain deploy resets it to
 the empty value in `wrangler.jsonc`, and `/send` then answers 500).
-The page is served at `https://onepass-demo.<subdomain>.workers.dev/` (HTTPS, as the one-time-code
+The page is served at `https://skipass-demo.<subdomain>.workers.dev/` (HTTPS, as the one-time-code
 AutoFill needs).
 
 ## Notes
