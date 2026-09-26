@@ -85,6 +85,7 @@ final class UITourTests: XCTestCase {
         let newExpand = app.buttons["account.\(newAddress).expand"]
         XCTAssertTrue(newExpand.waitForExistence(timeout: 10), "new account card did not appear")
         XCTAssertTrue(host.waitForNonExistence(timeout: 10), "sheet did not close")
+        dismissSavePasswordPrompt(app)
         pause("new-card")
 
         // Expand it.
@@ -169,6 +170,22 @@ final class UITourTests: XCTestCase {
             "account.\(address).delete"
         )
         return app.buttons.matching(predicate).firstMatch
+    }
+
+    /// iOS may offer "Save Password?" (Passwords app) after the username/password form closes;
+    /// it does not always appear. Dismiss it with "Not Now" when it does.
+    private func dismissSavePasswordPrompt(_ app: XCUIApplication) {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let deadline = Date().addingTimeInterval(4)
+        while Date() < deadline {
+            for candidate in [app.buttons["Not Now"], springboard.buttons["Not Now"]] where candidate.exists {
+                pause("save-password-prompt")
+                candidate.tap()
+                _ = candidate.waitForNonExistence(timeout: 5)
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
     }
 
     private func tabButton(in app: XCUIApplication, label: String) -> XCUIElement {
