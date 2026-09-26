@@ -13,6 +13,8 @@ final class UITourTests: XCTestCase {
     private let pace: TimeInterval = 1.2
     private var step = 0
 
+    private enum Direction { case up, down }
+
     func testTour() throws {
         try XCTSkipUnless(
             ProcessInfo.processInfo.environment["ONEPASS_TOUR"] == "1",
@@ -53,8 +55,10 @@ final class UITourTests: XCTestCase {
         XCTAssertTrue(email.waitForExistence(timeout: 10), "add sheet did not appear")
         pause("add-sheet")
 
+        let newAddress = "hello@studio.co"
         email.tap()
-        email.typeText("hello@studio.co")
+        email.typeText(newAddress)
+        XCTAssertEqual(email.value as? String, newAddress)
         pause("email-typed")
 
         tapWhenEnabled(app.buttons["accountForm.continue"])
@@ -66,13 +70,11 @@ final class UITourTests: XCTestCase {
 
         host.tap()
         host.typeText("mail.studio.co")
+        XCTAssertEqual(host.value as? String, "mail.studio.co")
 
         // Port (default 993) and username (the typed address) are prefilled by the form.
-        let port = app.textFields["accountForm.port"]
-        replaceText(in: port, with: "993")
-
-        let username = app.textFields["accountForm.username"]
-        replaceText(in: username, with: "hello@studio.co")
+        replaceText(in: app.textFields["accountForm.port"], with: "993")
+        replaceText(in: app.textFields["accountForm.username"], with: newAddress)
 
         let password = app.secureTextFields["accountForm.password"]
         password.tap()
@@ -81,25 +83,23 @@ final class UITourTests: XCTestCase {
 
         // Save: the new card appears.
         tapWhenEnabled(app.buttons["accountForm.save"])
-        let newAddress = "hello@studio.co"
-        let newExpand = app.buttons["account.\(newAddress).expand"]
-        XCTAssertTrue(newExpand.waitForExistence(timeout: 10), "new account card did not appear")
         XCTAssertTrue(host.waitForNonExistence(timeout: 10), "sheet did not close")
         dismissSavePasswordPrompt(app)
+        let newExpand = app.buttons["account.\(newAddress).expand"]
+        XCTAssertTrue(newExpand.waitForExistence(timeout: 10), "new account card did not appear")
         pause("new-card")
 
         // Expand it.
-        if !newExpand.isHittable { app.swipeUp() }
+        scrollToHittable(newExpand, in: app, direction: .up)
         newExpand.tap()
         let delete = app.buttons["account.\(newAddress).delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 10))
-        if !delete.isHittable { app.swipeUp() }
+        scrollToHittable(delete, in: app, direction: .up)
         pause("new-card-expanded")
 
         // Delete and confirm.
         delete.tap()
-        let confirm = confirmDeleteButton(in: app, address: newAddress)
-        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "delete confirmation did not appear")
+        let confirm = confirmDeleteButton(in: app, excluding: "account.\(newAddress).delete")
         pause("delete-confirm")
         confirm.tap()
         XCTAssertTrue(newExpand.waitForNonExistence(timeout: 10), "card was not deleted")
@@ -107,8 +107,8 @@ final class UITourTests: XCTestCase {
 
         // Gear (no-op).
         let settings = app.buttons["header.settings"]
-        app.swipeDown()
         XCTAssertTrue(settings.waitForExistence(timeout: 10))
+        scrollToHittable(settings, in: app, direction: .down)
         settings.tap()
         pause("settings-tapped")
 
@@ -116,6 +116,7 @@ final class UITourTests: XCTestCase {
         tabButton(in: app, label: "Plan").tap()
         let pro = app.buttons["plan.pro"]
         XCTAssertTrue(pro.waitForExistence(timeout: 10), "Plan screen did not appear")
+        scrollToHittable(pro, in: app, direction: .up)
         pause("plan")
 
         pro.tap()
@@ -148,28 +149,51 @@ final class UITourTests: XCTestCase {
 
     /// Leaves the field alone when it already holds `text`; otherwise focuses it with the
     /// cursor at the end (fields are right-aligned, so a center tap lands at the start),
-    /// deletes the current value and types `text`.
+    /// deletes the current value and types `text`. Asserts the final value either way.
     private func replaceText(in field: XCUIElement, with text: String) {
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "\(field) missing")
         let current = field.value as? String ?? ""
-        if current == text { return }
-        field.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
-        let deletes = String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count)
-        field.typeText(deletes + text)
+        if current != text {
+            field.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
+            let deletes = String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count)
+            field.typeText(deletes + text)
+        }
         XCTAssertEqual(field.value as? String, text)
     }
 
-    /// The confirmation dialog's Delete button. SwiftUI may not carry the identifier into the
-    /// system dialog, so fall back to the "Delete" button that is not the card's own.
-    private func confirmDeleteButton(in app: XCUIApplication, address: String) -> XCUIElement {
-        // iOS 26 shows the dialog as a popover whose button is reported twice; take the first.
-        let byID = app.buttons.matching(identifier: "account.\(address).delete.confirm").firstMatch
-        if byID.waitForExistence(timeout: 3) { return byID }
-        let predicate = NSPredicate(
-            format: "label == %@ AND identifier != %@",
-            "Delete",
-            "account.\(address).delete"
-        )
-        return app.buttons.matching(predicate).firstMatch
+    /// Swipes the screen's scroll view until `element` is hittable, rechecking after each swipe
+    /// (bounded). Fails with the element's frame when it never becomes hittable.
+    private func scrollToHittable(_ element: XCUIElement, in app: XCUIApplication, direction: Direction, attempts: Int = 4) {
+        // The scroll view that contains the element (both tabs keep a scroll view alive).
+        let scrollView = app.scrollViews
+            .containing(NSPredicate(format: "identifier == %@", element.identifier))
+            .firstMatch
+        for _ in 0..<attempts {
+            if element.isHittable { return }
+            switch direction {
+            case .up: scrollView.swipeUp(velocity: .slow)
+            case .down: scrollView.swipeDown(velocity: .slow)
+            }
+            Thread.sleep(forTimeInterval: 0.6)  // let deceleration finish before rechecking
+        }
+        XCTAssertTrue(element.isHittable, "\(element.identifier) not hittable after \(attempts) swipes; frame \(element.frame)")
+    }
+
+    /// The dialog's destructive "Delete" action. iOS 26 renders it as a button nested in a
+    /// button, so the label query has several matches: take the deepest (last in document
+    /// order) hittable one that is not the card's own Delete button.
+    private func confirmDeleteButton(in app: XCUIApplication, excluding cardDeleteID: String) -> XCUIElement {
+        let predicate = NSPredicate(format: "label == %@ AND identifier != %@", "Delete", cardDeleteID)
+        let query = app.buttons.matching(predicate)
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            if let button = query.allElementsBoundByIndex.last(where: { $0.exists && $0.isHittable }) {
+                return button
+            }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        XCTFail("delete confirmation did not appear; matches: \(query.allElementsBoundByIndex.map(\.debugDescription))")
+        return query.element(boundBy: 0)
     }
 
     /// iOS may offer "Save Password?" (Passwords app) after the username/password form closes;
@@ -181,7 +205,7 @@ final class UITourTests: XCTestCase {
             for candidate in [app.buttons["Not Now"], springboard.buttons["Not Now"]] where candidate.exists {
                 pause("save-password-prompt")
                 candidate.tap()
-                _ = candidate.waitForNonExistence(timeout: 5)
+                XCTAssertTrue(candidate.waitForNonExistence(timeout: 5), "Save Password prompt did not close")
                 return
             }
             Thread.sleep(forTimeInterval: 0.25)

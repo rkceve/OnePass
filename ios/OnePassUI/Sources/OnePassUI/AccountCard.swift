@@ -70,7 +70,8 @@ struct AccountCard: View {
             Button(Copy.delete, role: .destructive) {
                 Task { await performDelete() }
             }
-            .accessibilityIdentifier("account.\(account.address).delete.confirm")
+            // No accessibility identifier: on iOS 26 the dialog renders this action as a button
+            // nested in a button and both inherit it, so identifier queries are ambiguous.
             Button(Copy.cancel, role: .cancel) {}
         } message: {
             Text(account.address)
