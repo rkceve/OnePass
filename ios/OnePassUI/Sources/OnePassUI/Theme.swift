@@ -39,18 +39,88 @@ extension View {
         modifier(CardSurface())
     }
 
-    /// Control-layer surface: Liquid Glass on iOS 26+, material or tint fallback before.
+    /// Control inside a card whose glass morphs when it appears / disappears (iOS 26+):
+    /// interactive Liquid Glass tagged with `glassEffectID` so a surrounding
+    /// `GlassEffectContainer` can morph it. Before iOS 26: the original flat fill.
     @ViewBuilder
-    func glassControl<S: InsettableShape>(in shape: S, tint: Color? = nil) -> some View {
+    func morphingGlassControl<S: Shape, F: ShapeStyle>(
+        in shape: S,
+        tint: Color? = nil,
+        fallback: F,
+        id: String,
+        namespace: Namespace.ID
+    ) -> some View {
         if #available(iOS 26, *) {
             glassEffect(.regular.tint(tint).interactive(), in: shape)
+                .glassEffectID(id, in: namespace)
         } else {
-            if let tint {
-                background(tint, in: shape)
-            } else {
-                background(.ultraThinMaterial, in: shape)
-            }
+            background(fallback, in: shape)
         }
+    }
+
+    /// iOS 26+: the floating Liquid Glass tab bar overlaps the end of a tab's ScrollView
+    /// (measured in the UI tour: the last card's Delete stopped at y 749–802 pt while the tab
+    /// bar starts near y 767 pt on iPhone 16). Extra bottom safe-area padding lets the last
+    /// content scroll clear of it. Before iOS 26 the opaque tab bar already insets content.
+    @ViewBuilder
+    func tabBarClearance() -> some View {
+        if #available(iOS 26, *) {
+            safeAreaPadding(.bottom, 72)
+        } else {
+            self
+        }
+    }
+
+    /// Groups glass controls in one `GlassEffectContainer` (iOS 26+) so they share a
+    /// sampling region and can morph into one another. No-op before iOS 26.
+    @ViewBuilder
+    func glassGroup(spacing: CGFloat? = nil) -> some View {
+        if #available(iOS 26, *) {
+            GlassEffectContainer(spacing: spacing) { self }
+        } else {
+            self
+        }
+    }
+
+    /// Marks this view as the source of a zoom transition (iOS 26+ only, so the
+    /// pre-26 presentation is unchanged).
+    @ViewBuilder
+    func zoomTransitionSource(id: String, in namespace: Namespace.ID) -> some View {
+        if #available(iOS 26, *) {
+            matchedTransitionSource(id: id, in: namespace)
+        } else {
+            self
+        }
+    }
+
+    /// Zooms a presented sheet out of the matching `zoomTransitionSource` (iOS 26+ only).
+    @ViewBuilder
+    func zoomTransition(sourceID: String?, in namespace: Namespace.ID) -> some View {
+        if #available(iOS 26, *), let sourceID {
+            navigationTransition(.zoom(sourceID: sourceID, in: namespace))
+        } else {
+            self
+        }
+    }
+}
+
+/// Spring used for the account card accordion. iOS 26+: a slightly livelier spring
+/// so the glass controls visibly morph; before iOS 26 the original `.smooth`.
+enum CardMotion {
+    static var toggle: Animation {
+        if #available(iOS 26, *) {
+            return .spring(duration: 0.5, bounce: 0.18)
+        }
+        return .smooth
+    }
+
+    /// Expanded content: scales down from the summary row while fading (iOS 26+);
+    /// the original opacity + move before.
+    static var expandedContent: AnyTransition {
+        if #available(iOS 26, *) {
+            return .opacity.combined(with: .scale(scale: 0.94, anchor: .top))
+        }
+        return .opacity.combined(with: .move(edge: .top))
     }
 }
 

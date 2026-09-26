@@ -12,6 +12,7 @@ struct AccountCard: View {
     @State private var isConfirmingDelete: Bool
     @State private var isShowingError: Bool
     @State private var errorMessage: String
+    @Namespace private var glassNamespace
 
     // Explicit init: SDK 27 may not synthesize a memberwise init for views with @State.
     init(
@@ -35,7 +36,7 @@ struct AccountCard: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            AccountSummaryRow(account: account, isExpanded: isExpanded, onToggle: onToggle)
+            AccountSummaryRow(account: account, isExpanded: isExpanded, onToggle: onToggle, glassNamespace: glassNamespace)
 
             if isExpanded {
                 VStack(spacing: 14) {
@@ -52,19 +53,25 @@ struct AccountCard: View {
                         address: account.address,
                         showsEdit: account.kind == .imap,
                         onEdit: onEdit,
-                        onDelete: { isConfirmingDelete = true }
+                        onDelete: { isConfirmingDelete = true },
+                        glassNamespace: glassNamespace
                     )
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(CardMotion.expandedContent)
             }
         }
+        // iOS 26+: the chevron and the Edit / Delete controls are glass in one container,
+        // so the action glass morphs in and out as the card expands and collapses.
+        // The card surface itself stays non-glass (content layer).
+        .glassGroup(spacing: 14)
         .padding(16)
         .cardSurface()
         .confirmationDialog(Copy.deleteConfirmTitle, isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button(Copy.delete, role: .destructive) {
                 Task { await performDelete() }
             }
-            .accessibilityIdentifier("account.\(account.address).delete.confirm")
+            // No accessibility identifier: on iOS 26 the dialog renders this action as a button
+            // nested in a button and both inherit it, so identifier queries are ambiguous.
             Button(Copy.cancel, role: .cancel) {}
         } message: {
             Text(account.address)
@@ -93,6 +100,7 @@ private struct AccountSummaryRow: View {
     let account: MailAccount
     let isExpanded: Bool
     let onToggle: @MainActor () -> Void
+    let glassNamespace: Namespace.ID
 
     var body: some View {
         Button(action: onToggle) {
@@ -114,7 +122,12 @@ private struct AccountSummaryRow: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 40, height: 40)
-                    .background(Theme.neutralFill, in: Circle())
+                    .morphingGlassControl(
+                        in: Circle(),
+                        fallback: Theme.neutralFill,
+                        id: "chevron",
+                        namespace: glassNamespace
+                    )
                     .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
@@ -179,6 +192,11 @@ private struct AccountActionRow: View {
     let showsEdit: Bool
     let onEdit: @MainActor () -> Void
     let onDelete: @MainActor () -> Void
+    let glassNamespace: Namespace.ID
+
+    private var buttonShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -188,8 +206,13 @@ private struct AccountActionRow: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .foregroundStyle(.primary)
-                        .background(Theme.neutralFill, in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
-                        .contentShape(RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+                        .morphingGlassControl(
+                            in: buttonShape,
+                            fallback: Theme.neutralFill,
+                            id: "edit",
+                            namespace: glassNamespace
+                        )
+                        .contentShape(buttonShape)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("account.\(address).edit")
@@ -200,8 +223,14 @@ private struct AccountActionRow: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .foregroundStyle(Theme.destructive)
-                    .background(Theme.destructive.opacity(0.10), in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
-                    .contentShape(RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous))
+                    .morphingGlassControl(
+                        in: buttonShape,
+                        tint: Theme.destructive.opacity(0.12),
+                        fallback: Theme.destructive.opacity(0.10),
+                        id: "delete",
+                        namespace: glassNamespace
+                    )
+                    .contentShape(buttonShape)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("account.\(address).delete")

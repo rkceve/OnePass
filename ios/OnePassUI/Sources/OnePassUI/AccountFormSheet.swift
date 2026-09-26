@@ -73,7 +73,7 @@ struct AccountFormSheet: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(PastelBackground())
+            .modifier(SheetBackground())
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(editingAccount == nil ? Copy.addAccountTitle : Copy.editAccountTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -230,6 +230,18 @@ struct AccountFormSheet: View {
         guard let editingAccount, password.isEmpty else { return }
         if let stored = await store.revealPassword(id: editingAccount.id) {
             password = stored
+        }
+    }
+}
+
+/// iOS 26+: no custom background, so the system Liquid Glass sheet material shows
+/// (and the zoom transition morphs glass out of the Add button). Before iOS 26: the pastel.
+private struct SheetBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+        } else {
+            content.background(PastelBackground())
         }
     }
 }
