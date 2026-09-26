@@ -40,6 +40,7 @@ struct PlanScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .tabBarClearance()
         .background(PastelBackground())
     }
 }

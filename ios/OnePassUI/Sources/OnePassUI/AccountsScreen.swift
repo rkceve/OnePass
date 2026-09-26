@@ -45,6 +45,7 @@ struct AccountsScreen: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
+        .tabBarClearance()
         .background(PastelBackground())
         .sheet(item: $store.accountSheet) { sheet in
             AccountFormSheet(sheet: sheet, store: store)

@@ -58,6 +58,19 @@ extension View {
         }
     }
 
+    /// iOS 26+: the floating Liquid Glass tab bar overlaps the end of a tab's ScrollView
+    /// (measured in the UI tour: the last card's Delete stopped at y 749–802 pt while the tab
+    /// bar starts near y 767 pt on iPhone 16). Extra bottom safe-area padding lets the last
+    /// content scroll clear of it. Before iOS 26 the opaque tab bar already insets content.
+    @ViewBuilder
+    func tabBarClearance() -> some View {
+        if #available(iOS 26, *) {
+            safeAreaPadding(.bottom, 72)
+        } else {
+            self
+        }
+    }
+
     /// Groups glass controls in one `GlassEffectContainer` (iOS 26+) so they share a
     /// sampling region and can morph into one another. No-op before iOS 26.
     @ViewBuilder
