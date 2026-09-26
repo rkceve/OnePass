@@ -92,7 +92,8 @@ final class UITourTests: XCTestCase {
         newExpand.tap()
         let delete = app.buttons["account.\(newAddress).delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 10))
-        if !delete.isHittable { app.swipeUp() }
+        // Scroll so the actions sit clear of the floating tab bar.
+        app.swipeUp()
         pause("new-card-expanded")
 
         // Delete and confirm.
@@ -106,7 +107,7 @@ final class UITourTests: XCTestCase {
 
         // Gear (no-op).
         let settings = app.buttons["header.settings"]
-        if !settings.isHittable { app.swipeDown() }
+        app.swipeDown()
         XCTAssertTrue(settings.waitForExistence(timeout: 10))
         settings.tap()
         pause("settings-tapped")
@@ -160,7 +161,8 @@ final class UITourTests: XCTestCase {
     /// The confirmation dialog's Delete button. SwiftUI may not carry the identifier into the
     /// system dialog, so fall back to the "Delete" button that is not the card's own.
     private func confirmDeleteButton(in app: XCUIApplication, address: String) -> XCUIElement {
-        let byID = app.buttons["account.\(address).delete.confirm"]
+        // iOS 26 shows the dialog as a popover whose button is reported twice; take the first.
+        let byID = app.buttons.matching(identifier: "account.\(address).delete.confirm").firstMatch
         if byID.waitForExistence(timeout: 3) { return byID }
         let predicate = NSPredicate(
             format: "label == %@ AND identifier != %@",
